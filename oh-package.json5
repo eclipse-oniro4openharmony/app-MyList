@@ -1,0 +1,12 @@
+{
+  "license": "",
+  "devDependencies": {
+    "@ohos/hypium": "1.0.6"
+  },
+  "author": "",
+  "name": "MyList",
+  "description": "MyList is application to list the items in case forgetting to buy or to take",
+  "main": "",
+  "version": "1.0.0",
+  "dependencies": {}
+}
