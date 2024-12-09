@@ -10,32 +10,35 @@ MyList is application to list the items in case forgetting to buy or to take.
 
 Add item:
 
-![img_3.png](img_3.png)
+<img src="images/img_3.png" alt="img_3.png" width="200"/>
 
 Edit item：
 
-![img_1.png](img_1.png)
+<img src="images/img_1.png" alt="img_1.png" width="200"/>
 
 Delete items:
 
-![img_2.png](img_2.png)
-![img_4.png](img_4.png)
-
+<p float="left">
+    <img src="images/img_2.png" alt="img_2.png" width="200"/>
+    <img src="images/img_4.png" alt="img_4.png" width="200"/>
+</p>
 
 #### other functions:
 
 Two themes available to choose: light and dark:
 
-![img_5.png](img_5.png)
-![img_6.png](img_6.png)
+<p float="left">
+    <img src="images/img_5.png" alt="img_5.png" width="200"/>
+    <img src="images/img_6.png" alt="img_6.png" width="200"/>
+</p>
 
 Showing bought items and total items:
 
-![img_9.png](img_9.png)
+<img src="images/img_9.png" alt="img_9.png" width="200"/>
 
 Hide items:
 
-![img_10.png](img_10.png)
+<img src="images/img_10.png" alt="img_10.png" width="200"/>
 
 ## Directories
 ~~~
