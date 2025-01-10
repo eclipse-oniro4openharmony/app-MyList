@@ -107,11 +107,11 @@ struct Index {
     })
   }
 
-  aboutToDisappear() {
-    this.dialogController = null // 将dialogController置空
-    this.reminderDialogueController = null;
-    this.reminderModificationController = null;
-  }
+  // aboutToDisappear() {
+  //   this.dialogController = null // 将dialogController置空
+  //   this.reminderDialogueController = null;
+  //   this.reminderModificationController = null;
+  // }
 
   build() {
     Column() {
@@ -189,7 +189,7 @@ struct Index {
                         selectionColor: this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR,
                         doneColor: this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR,
                         onEditItem: (currentSelection: number, selectionCategory: string, changedValue: string, changedParameter: string, oldName?: string) => {
-                          this.onEditItem(currentSelection, selectionCategory, changedValue, changedParameter, oldName);
+                          this.onEditItem(currentSelection, selectionCategory, changedValue, changedParameter, oldName ?? '');
                         },
                         onDeleteItem: (currentSelection: number, selectionCategory: string) => {
                           this.onDeleteItem(currentSelection, selectionCategory);
@@ -209,7 +209,7 @@ struct Index {
                         selectionColor: this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR,
                         doneColor: this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR,
                         onEditItem: (currentSelection: number, selectionCategory: string, changedValue: string, changedParameter: string, oldName?: string) => {
-                          this.onEditItem(currentSelection, selectionCategory, changedValue, changedParameter, oldName);
+                          this.onEditItem(currentSelection, selectionCategory, changedValue, changedParameter, oldName ?? '');
                         },
                         onDeleteItem: (currentSelection: number, selectionCategory: string) => {
                           this.onDeleteItem(currentSelection, selectionCategory);
@@ -229,7 +229,7 @@ struct Index {
                         selectionColor: this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR,
                         doneColor: this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR,
                         onEditItem: (currentSelection: number, selectionCategory: string, changedValue: string, changedParameter: string, oldName?: string) => {
-                          this.onEditItem(currentSelection, selectionCategory, changedValue, changedParameter, oldName);
+                          this.onEditItem(currentSelection, selectionCategory, changedValue, changedParameter, oldName ?? '');
                         },
                         onDeleteItem: (currentSelection: number, selectionCategory: string) => {
                           this.onDeleteItem(currentSelection, selectionCategory);
@@ -249,7 +249,7 @@ struct Index {
                         selectionColor: this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR,
                         doneColor: this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR,
                         onEditItem: (currentSelection: number, selectionCategory: string, changedValue: string, changedParameter: string, oldName?: string) => {
-                          this.onEditItem(currentSelection, selectionCategory, changedValue, changedParameter, oldName);
+                          this.onEditItem(currentSelection, selectionCategory, changedValue, changedParameter, oldName ?? '');
                         },
                         onDeleteItem: (currentSelection: number, selectionCategory: string) => {
                           this.onDeleteItem(currentSelection, selectionCategory);
@@ -269,7 +269,7 @@ struct Index {
                         selectionColor: this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR,
                         doneColor: this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR,
                         onEditItem: (currentSelection: number, selectionCategory: string, changedValue: string, changedParameter: string, oldName?: string) => {
-                          this.onEditItem(currentSelection, selectionCategory, changedValue, changedParameter, oldName);
+                          this.onEditItem(currentSelection, selectionCategory, changedValue, changedParameter, oldName ?? '');
                         },
                         onDeleteItem: (currentSelection: number, selectionCategory: string) => {
                           this.onDeleteItem(currentSelection, selectionCategory);
@@ -289,7 +289,7 @@ struct Index {
                         selectionColor: this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR,
                         doneColor: this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR,
                         onEditItem: (currentSelection: number, selectionCategory: string, changedValue: string, changedParameter: string, oldName?: string) => {
-                          this.onEditItem(currentSelection, selectionCategory, changedValue, changedParameter, oldName);
+                          this.onEditItem(currentSelection, selectionCategory, changedValue, changedParameter, oldName ?? '');
                         },
                         onDeleteItem: (currentSelection: number, selectionCategory: string) => {
                           this.onDeleteItem(currentSelection, selectionCategory);
@@ -309,7 +309,7 @@ struct Index {
                         selectionColor: this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR,
                         doneColor: this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR,
                         onEditItem: (currentSelection: number, selectionCategory: string, changedValue: string, changedParameter: string, oldName?: string) => {
-                          this.onEditItem(currentSelection, selectionCategory, changedValue, changedParameter, oldName);
+                          this.onEditItem(currentSelection, selectionCategory, changedValue, changedParameter, oldName ?? '');
                         },
                         onDeleteItem: (currentSelection: number, selectionCategory: string) => {
                           this.onDeleteItem(currentSelection, selectionCategory);
@@ -350,7 +350,8 @@ struct Index {
 
   }
 
-  @Builder itemHead(category: string) {
+  @Builder
+  itemHead(category: string) {
     Flex({ justifyContent: FlexAlign.Start, direction: FlexDirection.Row, alignItems: ItemAlign.Center }) {
       Row() {
         if (category == 'Vegetable') {
@@ -529,9 +530,9 @@ struct Index {
     builder: AddItemDialogue({
       showReminderName: $showReminderName,
       isDay: this.isDay,
-      cancel: () => {
-        this.onCancel()
-      },
+      // cancel: () => {
+      //   this.onCancel()
+      // },
       confirm: (category: string, name: string, quantity: number) => {
         this.onAccept(category, name, quantity)
       }
@@ -582,7 +583,7 @@ struct Index {
     console.info('Click the callback in the blank area')
   }
 
-  reminderModificationController: CustomDialogController | null = new CustomDialogController({
+  reminderModificationController: CustomDialogController = new CustomDialogController({
     builder: ReminderModification({
       cancelModification: () => {
         this.onCancelModification()
@@ -606,10 +607,10 @@ struct Index {
     item.name = this.modifiedName;
     this.modificationItems[this.beforeModificationItemIndex].quantity = quantity;
     item.done = done;
-    this.shoppingListItemTable.deleteItem(item, (res) => {
+    this.shoppingListItemTable.deleteItem(item, (res: ShoppingItem) => {
       if (res != undefined) {
         let newItem: ShoppingItem = new ShoppingItem(name, quantity, done, this.modificationCategory);
-        this.shoppingListItemTable.updateItem(newItem, (res) => {
+        this.shoppingListItemTable.updateItem(newItem, (res: ShoppingItem) => {
           this.modificationItems.splice(this.modificationItemIndex, 1);
           switch (category) {
             case 'Vegetable':
@@ -640,7 +641,7 @@ struct Index {
 
   }
 
-  reminderDialogueController: CustomDialogController | null = new CustomDialogController({
+  reminderDialogueController: CustomDialogController = new CustomDialogController({
     builder: ReminderDialogue({
       cancelDeleteAll: () => {
         this.onCancelDeleteAll()
@@ -656,37 +657,35 @@ struct Index {
   }
 
   onConfirmDeleteAll() {
-    this.shoppingListItemTable.deleteAll((result) => {
-      if (result != false) {
-        this.availableCate = [];
-        this.vegetablesTotalCount = 0;
-        this.vegetablesDoneCount = 0;
-        this.vegetableList = [];
-        this.fruitTotalCount = 0;
-        this.fruitDoneCount = 0;
-        this.fruitList = [];
-        this.foodTotalCount = 0;
-        this.foodDoneCount = 0;
-        this.foodList = [];
-        this.clothTotalCount = 0;
-        this.clothDoneCount = 0;
-        this.clothList = [];
-        this.jewelryTotalCount = 0;
-        this.jewelryDoneCount = 0;
-        this.jewelryList = [];
-        this.homeFurnishingTotalCount = 0;
-        this.homeFurnishingDoneCount = 0;
-        this.homeFurnishingList = [];
-        this.otherTotalCount = 0;
-        this.otherDoneCount = 0;
-        this.otherList = [];
-      }
+    this.shoppingListItemTable.deleteAll(() => {
+      this.availableCate = [];
+      this.vegetablesTotalCount = 0;
+      this.vegetablesDoneCount = 0;
+      this.vegetableList = [];
+      this.fruitTotalCount = 0;
+      this.fruitDoneCount = 0;
+      this.fruitList = [];
+      this.foodTotalCount = 0;
+      this.foodDoneCount = 0;
+      this.foodList = [];
+      this.clothTotalCount = 0;
+      this.clothDoneCount = 0;
+      this.clothList = [];
+      this.jewelryTotalCount = 0;
+      this.jewelryDoneCount = 0;
+      this.jewelryList = [];
+      this.homeFurnishingTotalCount = 0;
+      this.homeFurnishingDoneCount = 0;
+      this.homeFurnishingList = [];
+      this.otherTotalCount = 0;
+      this.otherDoneCount = 0;
+      this.otherList = [];
     })
   }
 
   changeName(tempList: ShoppingItem[], currentSelection: number, selectionCategory: string, changedValue: string, currentSelectionItem: ShoppingItem, oldName: string, callback: Function) {
     let exists: boolean = false;
-    for (let i = 0;i < tempList.length; i++) {
+    for (let i = 0; i < tempList.length; i++) {
       if (tempList[i].name == changedValue && i != currentSelection) {
         exists = true;
         this.modificationItems = tempList;
@@ -698,14 +697,14 @@ struct Index {
         break;
       }
       if (!exists) {
-        this.shoppingListItemTable.insertItem(currentSelectionItem, (res) => {
+        this.shoppingListItemTable.insertItem(currentSelectionItem, (res: ShoppingItem) => {
           if (res != undefined) {
             callback(tempList);
           }
         })
         let oldItem: ShoppingItem = currentSelectionItem;
         oldItem.name = oldName;
-        this.shoppingListItemTable.deleteItem(oldItem, (res) => {
+        this.shoppingListItemTable.deleteItem(oldItem, (res: ShoppingItem) => {
           if (res != undefined) {
             callback(tempList);
           }
@@ -715,15 +714,15 @@ struct Index {
   }
 
   changeQuantity(tempList: ShoppingItem[], currentSelectionItem: ShoppingItem, callback: Function) {
-    this.shoppingListItemTable.updateItem(currentSelectionItem, (res) => {
-      if (res != undefined && res != 0) {
+    this.shoppingListItemTable.updateItem(currentSelectionItem, (res: ShoppingItem) => {
+      if (res != undefined && res.quantity != 0) {
         callback(tempList);
       }
     })
   }
 
   changeDone(tempList: ShoppingItem[], currentSelectionItem: ShoppingItem, callback: Function, selectionCategory: string) {
-    this.shoppingListItemTable.updateItem(currentSelectionItem, (res) => {
+    this.shoppingListItemTable.updateItem(currentSelectionItem, (res: ShoppingItem) => {
       if (res != undefined) {
         switch (selectionCategory) {
           case 'Vegetable':
@@ -815,7 +814,7 @@ struct Index {
     let tempList: ShoppingItem[] = [];
     switch (selectionCategory) {
       case 'Vegetable':
-        this.shoppingListItemTable.deleteItem(this.vegetableList[currentSelection], (result) => {
+        this.shoppingListItemTable.deleteItem(this.vegetableList[currentSelection], (result: boolean) => {
           if (result != false) {
             tempList = [...this.vegetableList];
             tempList.splice(currentSelection, 1);
@@ -828,7 +827,7 @@ struct Index {
         })
         break;
       case 'Fruit':
-        this.shoppingListItemTable.deleteItem(this.fruitList[currentSelection], (result) => {
+        this.shoppingListItemTable.deleteItem(this.fruitList[currentSelection], (result: boolean) => {
           if (result != false) {
             tempList = [...this.fruitList];
             tempList.splice(currentSelection, 1);
@@ -841,7 +840,7 @@ struct Index {
         });
         break;
       case 'Food':
-        this.shoppingListItemTable.deleteItem(this.foodList[currentSelection], (result) => {
+        this.shoppingListItemTable.deleteItem(this.foodList[currentSelection], (result: boolean) => {
           if (result != false) {
             tempList = [...this.foodList];
             tempList.splice(currentSelection, 1);
@@ -854,8 +853,8 @@ struct Index {
         });
         break;
       case 'Cloth':
-        this.shoppingListItemTable.deleteItem(this.clothList[currentSelection], (result) => {
-          if (result.code == Constants.SUCCESS_CODE) {
+        this.shoppingListItemTable.deleteItem(this.clothList[currentSelection], (result: Constants) => {
+          if (result == Constants.SUCCESS_CODE) {
             tempList = [...this.clothList];
             tempList.splice(currentSelection, 1);
             this.getClothCount(tempList);
@@ -867,8 +866,8 @@ struct Index {
         });
         break;
       case 'jewelry':
-        this.shoppingListItemTable.deleteItem(this.jewelryList[currentSelection], (result) => {
-          if (result.code == Constants.SUCCESS_CODE) {
+        this.shoppingListItemTable.deleteItem(this.jewelryList[currentSelection], (result: Constants) => {
+          if (result == Constants.SUCCESS_CODE) {
             tempList = [...this.jewelryList];
             tempList.splice(currentSelection, 1);
             this.getJewelryCount(tempList);
@@ -880,7 +879,7 @@ struct Index {
         });
         break;
       case 'HomeFurnishing':
-        this.shoppingListItemTable.deleteItem(this.homeFurnishingList[currentSelection], (result) => {
+        this.shoppingListItemTable.deleteItem(this.homeFurnishingList[currentSelection], (result: boolean) => {
           if (result != false) {
             tempList = [...this.homeFurnishingList];
             tempList.splice(currentSelection, 1);
@@ -893,7 +892,7 @@ struct Index {
         });
         break;
       default:
-        this.shoppingListItemTable.deleteItem(this.otherList[currentSelection], (result) => {
+        this.shoppingListItemTable.deleteItem(this.otherList[currentSelection], (result: boolean) => {
           if (result != false) {
             tempList = [...this.otherList];
             tempList.splice(currentSelection, 1);
@@ -959,7 +958,7 @@ struct Index {
   reactiveRefreshList(list: ShoppingItem[], name: string, quantity: number, item: ShoppingItem, category: string) {
     let exists: boolean = false;
     if (list.length > 0) {
-      for (let i = 0;i < list.length; i++) {
+      for (let i = 0; i < list.length; i++) {
         if (name == list[i].name) {
           exists = true;
           break;
@@ -968,9 +967,9 @@ struct Index {
     }
     if (!exists) {
       this.showReminderName = false;
-      this.shoppingListItemTable.insertItem(item, (result) => {
+      this.shoppingListItemTable.insertItem(item, (result: ShoppingItem) => {
         let tempList: ShoppingItem[] = [...list];
-        if (result != undefined && result != 0) {
+        if (result != undefined && result.quantity != 0) {
           tempList.push(item);
           switch (category) {
             case 'Vegetable':
@@ -1009,7 +1008,9 @@ struct Index {
     }
   }
 
-  editItem(changedParameter, currentSelectionItem, tempList, currentSelection, selectionCategory, changedValue, oldName, callback: Function) {
+  editItem(changedParameter: string, currentSelectionItem: ShoppingItem, tempList: ShoppingItem[],
+           currentSelection: number, selectionCategory: string, changedValue: string, oldName: string
+    , callback: Function) {
     if (changedParameter == 'name') {
       this.changeName(tempList, currentSelection, selectionCategory, changedValue, currentSelectionItem, oldName, callback);
     } else if (changedParameter == 'quantity') {

@@ -1,12 +1,34 @@
 {
   "app": {
-    "signingConfigs": [],
-    "compileSdkVersion": 9,
-    "compatibleSdkVersion": 9,
+    "signingConfigs": [
+      {
+        "name": "default",
+        "material": {
+          "certpath": "C:/Users/c84381641/.ohos/config/openharmony/default_app-MyList_G3_2IZi4NC2T8Y4-MeYePbkSdWO2BSamrAjVcGacDOw=.cer",
+          "storePassword": "0000001BDD26642E69F538677A4C6265E80D3A202446DD0D9795328F3632B4B3EFED96D7E361642CF6F2D3",
+          "keyAlias": "debugKey",
+          "keyPassword": "0000001BC84658C69A861212E00199CB2CDA900F2A8B66C3663726358C2C77E581489744F26A04E59FCC2E",
+          "profile": "C:/Users/c84381641/.ohos/config/openharmony/default_app-MyList_G3_2IZi4NC2T8Y4-MeYePbkSdWO2BSamrAjVcGacDOw=.p7b",
+          "signAlg": "SHA256withECDSA",
+          "storeFile": "C:/Users/c84381641/.ohos/config/openharmony/default_app-MyList_G3_2IZi4NC2T8Y4-MeYePbkSdWO2BSamrAjVcGacDOw=.p12"
+        }
+      }
+    ],
     "products": [
       {
         "name": "default",
         "signingConfig": "default",
+        "compileSdkVersion": 11,
+        "compatibleSdkVersion": 11,
+        "runtimeOS": "OpenHarmony",
+      }
+    ],
+    "buildModeSet": [
+      {
+        "name": "debug",
+      },
+      {
+        "name": "release"
       }
     ]
   },

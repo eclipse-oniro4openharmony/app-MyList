@@ -1,8 +1,14 @@
 import relationalStore from '@ohos.data.relationalStore';
 import ShoppingItem from './ShoppingItem';
+import { BusinessError } from '@ohos.base';
+
+interface StoreConfig {
+  name: string
+  securityLevel: relationalStore.SecurityLevel
+}
 
 export default class RDBUtil {
-  private store: relationalStore.RdbStore | null = null;
+  private store!: relationalStore.RdbStore;
   private tableName: string;
   private sqlCreateTable: string;
   private columns: Array<string>;
@@ -20,7 +26,7 @@ export default class RDBUtil {
       return;
     }
     let context = getContext(this);
-    relationalStore.getRdbStore(context, STORE_CONFIG, (err, store) => {
+    relationalStore.getRdbStore(context, storeconfig, (err: BusinessError, store: relationalStore.RdbStore) => {
       if (err) {
         return;
       }
@@ -92,10 +98,12 @@ export default class RDBUtil {
   }
 }
 
-export const STORE_CONFIG = {
-  name: 'ShoppingList.db', // 数据库文件名
-  securityLevel: relationalStore.SecurityLevel.S1 // 数据库安全级别
-};
+export class STORE_CONFIG implements StoreConfig {
+  name: string = 'ShoppingList.db'
+  securityLevel: relationalStore.SecurityLevel = relationalStore.SecurityLevel.S1
+}
+
+let storeconfig = new STORE_CONFIG()
 
 export class SQLiteData {
   shoppingList: ShoppingItem[];

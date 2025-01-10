@@ -23,7 +23,7 @@ export default class ShoppingListItemTable {
 
   deleteItem(item: ShoppingItem, callback: Function) {
     let predicatesDel = new relationalStore.RdbPredicates(Constants.SHOPPING_LIST_TABLE_NAME);
-    predicatesDel.equalTo('ID', item.category+item.name);
+    predicatesDel.equalTo('ID', item.category + item.name);
     this.table.deleteData(predicatesDel, callback);
   }
 
