@@ -17,14 +17,15 @@ export struct ShoppingListItem {
   @Prop doneColor: string;
   @State focusableName: boolean = false;
   @State focusableQuantity: boolean = false;
-  onEditItem: (currentSelection: number, selectionCategory: string, changedValue: string, changedParameter: string, oldName?: string) => void
-  onDeleteItem: (currentSelection: number, selectionCategory: string) => void
+  private regex: RegExp = new RegExp("^[0-9a-zA-Z\\s.%]*$")
+  onEditItem!: (currentSelection: number, selectionCategory: string, changedValue: string, changedParameter: string, oldName?: string) => void
+  onDeleteItem!: (currentSelection: number, selectionCategory: string) => void
 
   aboutToAppear() {
     this.oldName = this.shoppingItem.name;
   }
 
-  getColor(category) {
+  getColor(category: string) {
     switch (category) {
       case 'Vegetable':
         return Constants.ITEM_COLORS[0];
@@ -61,7 +62,7 @@ export struct ShoppingListItem {
         .backgroundColor(this.doneColor)
         .fontColor(this.getColor(this.shoppingItem.category))
         .onChange((value: string) => {
-          if (/^[0-9a-zA-Z\s.%]*$/.test(value)) {
+          if (this.regex.test(value)) {
             this.shoppingItem.name = value.trim();
           } else {
             promptAction.showToast({
@@ -118,16 +119,16 @@ export struct ShoppingListItem {
           }
         })
         .onSubmit((event: EnterKeyType) => {
-          if(this.shoppingItem.quantity <= 10000 && this.shoppingItem.quantity>0 && this.oldQuantity != this.shoppingItem.quantity){
+          if (this.shoppingItem.quantity <= 10000 && this.shoppingItem.quantity > 0 && this.oldQuantity != this.shoppingItem.quantity) {
             this.onEditItem(this.index, this.shoppingItem.category, String(this.shoppingItem.quantity), 'quantity');
-          }else{
+          } else {
             promptAction.showToast({
               message: '* Quantity max 10000, min 1.',
               duration: 3000,
               bottom: '80%'
             });
             this.shoppingItem.quantity = this.oldQuantity;
-            this.oldQuantity=this.shoppingItem.quantity;
+            this.oldQuantity = this.shoppingItem.quantity;
           }
         })
 

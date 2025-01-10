@@ -12,10 +12,16 @@ export struct AddItemDialogue {
   @State quantity: number = 1;
   @State selected: number = 1;
   @Prop isDay: boolean;
-  controller?: CustomDialogController;
-  cancel: () => void;
-  confirm: (category: string, name: string, quantity: number) => void;
+  cancel!: () => void;
+  confirm!: (category: string, name: string, quantity: number) => void;
+  controller: CustomDialogController = new CustomDialogController({
+    builder: AddItemDialogue({ showReminderName: this.showReminderName, isDay: this.isDay })
+  })
   textController: TextInputController = new TextInputController()
+  // private regex1: RegExp = new RegExp("/^[0-9a-zA-Z\s.%]+$/")
+  // private regex2: RegExp = new RegExp("/^((?!0)\d{1,5}|10000)$/")
+  private regex1: RegExp = new RegExp("^[0-9a-zA-Z\\s.%]+$");
+  private regex2: RegExp = new RegExp("^((?!0)\\d{1,5}|10000)$");
 
   build() {
     Flex({ justifyContent: FlexAlign.SpaceAround, direction: FlexDirection.Column, alignItems: ItemAlign.Center }) {
@@ -102,7 +108,7 @@ export struct AddItemDialogue {
           .fontColor(this.isDay ? Constants.DARK_TEXT_COLOR : Constants.LIGHT_TEXT_COLOR)
           .backgroundColor(this.isDay ? Constants.LIGHT_ADD_ITEM_FORM_BACKGROUND_COLOR : Constants.DARK_ADD_ITEM_FORM_BACKGROUND_COLOR)
           .onChange((value: string) => {
-            if (/^[0-9a-zA-Z\s.%]+$/.test(value)) {
+            if (this.regex1.test(value)) {
               this.showReminderNamePatten = false;
               this.showReminderName = false;
               this.name = value.trim()
@@ -142,7 +148,7 @@ export struct AddItemDialogue {
           .inputFilter('[0-9]', () => {
           })
           .onChange((value: string) => {
-            if ( /^((?!0)\d{1,5}|10000)$/.test(value)) {
+            if (this.regex2.test(value)) {
               this.showReminderQuality = false;
               this.quantity = Number(value.trim());
             } else {
@@ -182,7 +188,7 @@ export struct AddItemDialogue {
           .width(80)
           .fontColor(this.isDay ? Constants.DARK_TEXT_COLOR : Constants.LIGHT_TEXT_COLOR)
           .backgroundColor(this.isDay ? Constants.LIGHT_ADD_CONFIRM_BUTTON_BACKGROUND_COLOR : Constants.DARK_ADD_CONFIRM_BUTTON_BACKGROUND_COLOR)
-      }.padding({ top: 5 }).height(40).width('90%').margin({ top:20,bottom: 20 })
+      }.padding({ top: 5 }).height(40).width('90%').margin({ top: 20, bottom: 20 })
     }
     .borderRadius(5)
     .width('100%')
