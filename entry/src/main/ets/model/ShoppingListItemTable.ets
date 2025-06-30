@@ -1,4 +1,4 @@
-import relationalStore from '@ohos.data.relationalStore';
+import { relationalStore } from '@kit.ArkData';
 import Constants from '../pages/Constants'
 import RDBUtil from './RDBUtil'
 import ShoppingItem from './ShoppingItem';

@@ -1,4 +1,3 @@
-import promptAction from '@ohos.promptAction';
 import Constants from '../Constants';
 import ShoppingItem from '../../model/ShoppingItem'
 
@@ -65,28 +64,28 @@ export struct ShoppingListItem {
           if (this.regex.test(value)) {
             this.shoppingItem.name = value.trim();
           } else {
-            promptAction.showToast({
+            this.getUIContext().getPromptAction().showToast({
               message: '* Item name contains letters, space,. and % only',
               duration: 3000,
               bottom: '80%'
-            });
+            })
             this.shoppingItem.name = this.oldName;
           }
         })
         .onSubmit(() => {
           if (this.shoppingItem.name == '') {
-            promptAction.showToast({
+            this.getUIContext().getPromptAction().showToast({
               message: '* Item name cannot be empty',
               duration: 3000,
               bottom: '80%'
-            });
+            })
             this.shoppingItem.name = this.oldName;
           } else if (this.oldName == this.shoppingItem.name) {
-            promptAction.showToast({
+            this.getUIContext().getPromptAction().showToast({
               message: '* Item name is not changed',
               duration: 3000,
               bottom: '80%'
-            });
+            })
             this.shoppingItem.name = this.oldName;
           } else {
             this.onEditItem(this.index, this.shoppingItem.category, this.shoppingItem.name, 'name', this.oldName);
@@ -108,11 +107,11 @@ export struct ShoppingListItem {
         })
         .onChange((value: string) => {
           if (Number(value.trim()) > 10000 || Number(value.trim()) <= 0) {
-            promptAction.showToast({
+            this.getUIContext().getPromptAction().showToast({
               message: '* Quantity max 10000, min 1.',
               duration: 3000,
               bottom: '80%'
-            });
+            })
             this.shoppingItem.quantity = this.oldQuantity;
           } else {
             this.shoppingItem.quantity = Number(value.trim());
@@ -122,11 +121,11 @@ export struct ShoppingListItem {
           if (this.shoppingItem.quantity <= 10000 && this.shoppingItem.quantity > 0 && this.oldQuantity != this.shoppingItem.quantity) {
             this.onEditItem(this.index, this.shoppingItem.category, String(this.shoppingItem.quantity), 'quantity');
           } else {
-            promptAction.showToast({
+            this.getUIContext().getPromptAction().showToast({
               message: '* Quantity max 10000, min 1.',
               duration: 3000,
               bottom: '80%'
-            });
+            })
             this.shoppingItem.quantity = this.oldQuantity;
             this.oldQuantity = this.shoppingItem.quantity;
           }
