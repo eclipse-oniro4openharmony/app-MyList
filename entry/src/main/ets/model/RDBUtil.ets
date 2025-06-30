@@ -1,6 +1,7 @@
-import relationalStore from '@ohos.data.relationalStore';
 import ShoppingItem from './ShoppingItem';
-import { BusinessError } from '@ohos.base';
+import { BusinessError } from '@kit.BasicServicesKit';
+import { relationalStore } from '@kit.ArkData';
+import { UIContext } from '@kit.ArkUI';
 
 interface StoreConfig {
   name: string
@@ -8,10 +9,12 @@ interface StoreConfig {
 }
 
 export default class RDBUtil {
-  private store!: relationalStore.RdbStore;
+  // private store!: relationalStore.RdbStore;
+  private store: relationalStore.RdbStore | undefined;
   private tableName: string;
   private sqlCreateTable: string;
   private columns: Array<string>;
+  private uiContext: UIContext | undefined;
 
   constructor(tableName: string, sqlCreateTable: string, columns: Array<string>) {
     this.tableName = tableName;
@@ -25,7 +28,7 @@ export default class RDBUtil {
       callback();
       return;
     }
-    let context = getContext(this);
+    let context = this.uiContext?.getHostContext()
     relationalStore.getRdbStore(context, storeconfig, (err: BusinessError, store: relationalStore.RdbStore) => {
       if (err) {
         return;
@@ -67,8 +70,9 @@ export default class RDBUtil {
     }
   }
 
-  updateData(data: relationalStore.ValuesBucket, predicatesUpdate: relationalStore.RdbPredicates, callback: Function = () => {
-  }) {
+  updateData(data: relationalStore.ValuesBucket, predicatesUpdate: relationalStore.RdbPredicates,
+    callback: Function = () => {
+    }) {
     if (this.store != undefined) {
       this.store.update(data, predicatesUpdate, (err: Error, rows: number) => {
         if (err) {

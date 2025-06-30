@@ -1,8 +1,8 @@
 import ShoppingItem from '../model/ShoppingItem';
-import { AddItemDialogue } from './Components/AddItemDialogue';
-import { ReminderDialogue } from './Components/ReminderDialogue';
-import { ReminderModification } from './Components/ReminderModification';
-import { ShoppingListItem } from './Components/ShoppingListItem';
+import { AddItemDialogue } from './components/AddItemDialogue';
+import { ReminderDialogue } from './components/ReminderDialogue';
+import { ReminderModification } from './components/ReminderModification';
+import { ShoppingListItem } from './components/ShoppingListItem';
 import Constants from './Constants';
 import ShoppingListItemTable from '../model/ShoppingListItemTable';
 
