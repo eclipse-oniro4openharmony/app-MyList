@@ -4,24 +4,89 @@ import ShoppingItem from '../../model/ShoppingItem'
 @Component
 export struct ShoppingListItem {
   @Prop isDay: boolean;
-  @State shoppingItem: ShoppingItem = new ShoppingItem('', 1, false, 'Food');
+  @Watch('syncDrafts') @Prop shoppingItem: ShoppingItem = new ShoppingItem('', 1, false, 'Food');
   @State oldQuantity: number = this.shoppingItem.quantity;
   @State oldName: string = this.shoppingItem.name;
-  @State defaultQuantity: string = '1';
-  @State index: number = 0;
+  @State editName: string = this.shoppingItem.name;
+  @State editQuantity: string = String(this.shoppingItem.quantity);
+  private namePending: boolean = false;
+  private quantityPending: boolean = false;
+  @Prop index: number = 0;
   @Prop selectionColor: string;
   @State widthDel: number = 0;
   @State heightDel: number = 0;
-  @State done: boolean = false;
   @Prop doneColor: string;
-  @State focusableName: boolean = false;
-  @State focusableQuantity: boolean = false;
-  private regex: RegExp = new RegExp("^[0-9a-zA-Z\\s.%]*$")
-  onEditItem!: (currentSelection: number, selectionCategory: string, changedValue: string, changedParameter: string, oldName?: string) => void
-  onDeleteItem!: (currentSelection: number, selectionCategory: string) => void
+  private regex: RegExp = new RegExp('^[0-9a-zA-Z\\s.%]*$');
+  onEditItem: (currentSelection: number, selectionCategory: string, changedValue: string,
+    changedParameter: string, oldName?: string, onComplete?: (success: boolean) => void) => void = () => {};
+  onDeleteItem: (currentSelection: number, selectionCategory: string) => void = () => {};
 
   aboutToAppear() {
+    this.syncDrafts();
+  }
+
+  syncDrafts() {
+    if (this.namePending || this.quantityPending || this.editName !== this.oldName ||
+      this.editQuantity !== String(this.oldQuantity)) {
+      return;
+    }
     this.oldName = this.shoppingItem.name;
+    this.oldQuantity = this.shoppingItem.quantity;
+    this.editName = this.shoppingItem.name;
+    this.editQuantity = String(this.shoppingItem.quantity);
+  }
+
+  showValidationError(message: string) {
+    try {
+      this.getUIContext().getPromptAction().showToast({ message: message });
+    } catch (error) {
+      console.error('Unable to display validation error');
+    }
+  }
+
+  commitName() {
+    if (this.namePending || this.editName === this.oldName) {
+      return;
+    }
+    const name: string = this.editName.trim();
+    if (name.length === 0 || !this.regex.test(name)) {
+      this.editName = this.oldName;
+      this.showValidationError('Enter a valid item name.');
+      return;
+    }
+    this.namePending = true;
+    this.onEditItem(this.index, this.shoppingItem.category, name, 'name', this.oldName, (success: boolean) => {
+      this.namePending = false;
+      if (success) {
+        this.oldName = name;
+        this.editName = name;
+      } else {
+        this.editName = this.oldName;
+      }
+    });
+  }
+
+  commitQuantity() {
+    if (this.quantityPending || this.editQuantity === String(this.oldQuantity)) {
+      return;
+    }
+    const quantity: number = Number(this.editQuantity);
+    if (!/^[1-9][0-9]*$/.test(this.editQuantity) || quantity > 10000) {
+      this.editQuantity = String(this.oldQuantity);
+      this.showValidationError('Enter a quantity from 1 to 10000.');
+      return;
+    }
+    this.quantityPending = true;
+    this.onEditItem(this.index, this.shoppingItem.category, String(quantity), 'quantity', undefined,
+      (success: boolean) => {
+        this.quantityPending = false;
+        if (success) {
+          this.oldQuantity = quantity;
+          this.editQuantity = String(quantity);
+        } else {
+          this.editQuantity = String(this.oldQuantity);
+        }
+      });
   }
 
   getColor(category: string) {
@@ -35,7 +100,7 @@ export struct ShoppingListItem {
       case 'Food':
         return Constants.ITEM_COLORS[2];
         break;
-      case 'Cloth':
+      case 'Clothing':
         return Constants.ITEM_COLORS[3];
         break;
       case 'Jewelry':
@@ -53,102 +118,71 @@ export struct ShoppingListItem {
   build() {
     Flex({ justifyContent: FlexAlign.SpaceBetween, alignItems: ItemAlign.Center }) {
 
-      TextInput({ placeholder: this.shoppingItem.name, text: this.shoppingItem.name })
-        .width(150)
+      TextInput({ placeholder: this.oldName, text: this.editName })
+        .layoutWeight(1)
         .height('100%')
-        .fontSize(15)
-        .padding(2)
+        .fontSize(16)
+        .padding({ left: 6, right: 6 })
         .backgroundColor(this.doneColor)
-        .fontColor(this.getColor(this.shoppingItem.category))
+        .fontColor(this.isDay ? Constants.DARK_TEXT_COLOR : Constants.LIGHT_TEXT_COLOR)
+        .placeholderColor(this.isDay ? Constants.DARK_TEXT_SUBTITLE_COLOR : Constants.LIGHT_TEXT_SUBTITLE_COLOR)
         .onChange((value: string) => {
           if (this.regex.test(value)) {
-            this.shoppingItem.name = value.trim();
+            this.editName = value;
           } else {
             this.getUIContext().getPromptAction().showToast({
               message: '* Item name contains letters, space,. and % only',
               duration: 3000,
               bottom: '80%'
             })
-            this.shoppingItem.name = this.oldName;
+            this.editName = this.oldName;
           }
         })
         .onSubmit(() => {
-          if (this.shoppingItem.name == '') {
-            this.getUIContext().getPromptAction().showToast({
-              message: '* Item name cannot be empty',
-              duration: 3000,
-              bottom: '80%'
-            })
-            this.shoppingItem.name = this.oldName;
-          } else if (this.oldName == this.shoppingItem.name) {
-            this.getUIContext().getPromptAction().showToast({
-              message: '* Item name is not changed',
-              duration: 3000,
-              bottom: '80%'
-            })
-            this.shoppingItem.name = this.oldName;
-          } else {
-            this.onEditItem(this.index, this.shoppingItem.category, this.shoppingItem.name, 'name', this.oldName);
-            this.oldName = this.shoppingItem.name;
-          }
+          this.commitName();
         })
+        .onBlur(() => { this.commitName(); })
 
       TextInput({
-        placeholder: String(this.shoppingItem.quantity),
-        text: String(this.shoppingItem.quantity),
+        placeholder: String(this.oldQuantity),
+        text: this.editQuantity,
       })
-        .width(150)
+        .width(54)
         .height('100%')
         .padding(2)
         .fontSize(15)
+        .textAlign(TextAlign.Center)
         .backgroundColor(this.doneColor)
-        .fontColor(this.getColor(this.shoppingItem.category))
+        .fontColor(this.isDay ? Constants.DARK_TEXT_COLOR : Constants.LIGHT_TEXT_COLOR)
+        .placeholderColor(this.isDay ? Constants.DARK_TEXT_SUBTITLE_COLOR : Constants.LIGHT_TEXT_SUBTITLE_COLOR)
         .inputFilter('[0-9]', () => {
         })
         .onChange((value: string) => {
-          if (Number(value.trim()) > 10000 || Number(value.trim()) <= 0) {
-            this.getUIContext().getPromptAction().showToast({
-              message: '* Quantity max 10000, min 1.',
-              duration: 3000,
-              bottom: '80%'
-            })
-            this.shoppingItem.quantity = this.oldQuantity;
-          } else {
-            this.shoppingItem.quantity = Number(value.trim());
-          }
+          this.editQuantity = value;
         })
-        .onSubmit((event: EnterKeyType) => {
-          if (this.shoppingItem.quantity <= 10000 && this.shoppingItem.quantity > 0 && this.oldQuantity != this.shoppingItem.quantity) {
-            this.onEditItem(this.index, this.shoppingItem.category, String(this.shoppingItem.quantity), 'quantity');
-          } else {
-            this.getUIContext().getPromptAction().showToast({
-              message: '* Quantity max 10000, min 1.',
-              duration: 3000,
-              bottom: '80%'
-            })
-            this.shoppingItem.quantity = this.oldQuantity;
-            this.oldQuantity = this.shoppingItem.quantity;
-          }
+        .onSubmit(() => {
+          this.commitQuantity();
         })
+        .onBlur(() => { this.commitQuantity(); })
 
       Flex({ justifyContent: FlexAlign.End, alignItems: ItemAlign.Center }) {
         Checkbox({ name: 'checkbox1', group: 'checkboxGroup' })
-          .width(13)
-          .height(13)
+          .width(24)
+          .height(24)
           .select(this.shoppingItem.done)
           .selectedColor(Constants.ITEM_DONE_CHECKBOX_COLOR)
           .onChange((value: boolean) => {
-            this.done = value;
-            this.onEditItem(this.index, this.shoppingItem.category, value + '', 'done');
-            if (value) {
-              this.selectionColor = Constants.ITEM_SELECTION_COLOR1;
-              this.doneColor = Constants.ITEM_DONE_COLOR1;
-            } else {
-              this.selectionColor = this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR;
-              this.doneColor = this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR;
-            }
+            this.onEditItem(this.index, this.shoppingItem.category, value + '', 'done', undefined,
+              (success: boolean) => {
+                if (success) {
+                  this.selectionColor = value ? (this.isDay ? Constants.ITEM_SELECTION_COLOR1 : '#35204F') :
+                    (this.isDay ? '#FFFFFF' : '#22113D');
+                  this.doneColor = value ? (this.isDay ? Constants.ITEM_DONE_COLOR1 : '#35204F') :
+                    (this.isDay ? '#FFFFFF' : '#22113D');
+                }
+              });
           })
-      }.width(30).height('100%')
+      }.width(40).height('100%')
 
 
       Text(String(this.index)).width(0).height(0)
@@ -156,35 +190,37 @@ export struct ShoppingListItem {
       Text('Delete')
         .width(this.widthDel)
         .height(this.heightDel)
-        .fontColor(Constants.ITEM_DONE_COLOR1)
-        .fontSize(15)
+        .fontColor('#FFFFFF')
+        .fontSize(14)
         .onClick(() => {
           this.onDeleteItem(this.index, this.shoppingItem.category);
         })
-        .backgroundColor('#FF6F6F')
+        .backgroundColor('#C51D72')
         .textAlign(TextAlign.Center)
         .border({ radius: 10 })
-        .margin({ left: 15 })
+        .margin({ left: 8 })
     }
     .backgroundColor(this.selectionColor)
     .width('100%')
-    .height(25)
-    .padding({ left: 30, right: 30 })
+    .height(62)
+    .padding({ left: 12, right: 10 })
+    .margin({ top: 3 })
+    .borderRadius(14)
     .gesture(
       PanGesture({ direction: PanDirection.Horizontal })
         .onActionEnd((event: GestureEvent) => {
           if (event) {
             console.log("event.offsetX" + event.offsetX);
             if (event.offsetX < 0) {
-              this.heightDel = 22;
-              this.widthDel = 60;
-              this.selectionColor = Constants.ITEM_DELETE_COLOR;
-              this.doneColor = Constants.ITEM_DELETE_COLOR;
+              this.heightDel = 36;
+              this.widthDel = 70;
+              this.selectionColor = this.isDay ? Constants.ITEM_DELETE_COLOR : '#4A173D';
+              this.doneColor = this.isDay ? Constants.ITEM_DELETE_COLOR : '#4A173D';
             } else {
               this.heightDel = 0;
               this.widthDel = 0;
-              this.selectionColor = this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR;
-              this.doneColor = this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR;
+              this.selectionColor = this.isDay ? '#FFFFFF' : '#22113D';
+              this.doneColor = this.isDay ? '#FFFFFF' : '#22113D';
             }
           }
         })

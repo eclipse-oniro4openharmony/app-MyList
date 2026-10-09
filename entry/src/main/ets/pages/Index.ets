@@ -1,3 +1,4 @@
+import { common } from '@kit.AbilityKit';
 import ShoppingItem from '../model/ShoppingItem';
 import { AddItemDialogue } from './components/AddItemDialogue';
 import { ReminderDialogue } from './components/ReminderDialogue';
@@ -9,7 +10,6 @@ import ShoppingListItemTable from '../model/ShoppingListItemTable';
 @Entry
 @Component
 struct Index {
-  @State username: string = 'My';
   //当前修改的项目的临时信息
   @State modificationItems: ShoppingItem[] = [];
   @State modificationCategory: string = '';
@@ -20,7 +20,7 @@ struct Index {
   @State vegetableList: ShoppingItem[] = [];
   @State fruitList: ShoppingItem[] = [];
   @State foodList: ShoppingItem[] = [];
-  @State clothList: ShoppingItem[] = [];
+  @State clothingList: ShoppingItem[] = [];
   @State jewelryList: ShoppingItem[] = [];
   @State homeFurnishingList: ShoppingItem[] = [];
   @State otherList: ShoppingItem[] = [];
@@ -34,8 +34,8 @@ struct Index {
   @State vegetablesDoneCount: number = 0;
   @State fruitDoneCount: number = 0;
   @State fruitTotalCount: number = 0;
-  @State clothDoneCount: number = 0;
-  @State clothTotalCount: number = 0;
+  @State clothingDoneCount: number = 0;
+  @State clothingTotalCount: number = 0;
   @State foodDoneCount: number = 0;
   @State foodTotalCount: number = 0;
   @State jewelryTotalCount: number = 0;
@@ -45,66 +45,37 @@ struct Index {
   @State otherTotalCount: number = 0;
   @State otherDoneCount: number = 0;
   @State showReminderName: boolean = false;
+  @State isLoading: boolean = true;
+  @State loadError: boolean = false;
   shoppingListItemTable: ShoppingListItemTable = new ShoppingListItemTable();
+  private modificationCallback: (success: boolean) => void = () => {};
 
   aboutToAppear() {
-    this.shoppingListItemTable.getRdbStore(() => {
-      this.shoppingListItemTable.queryItemsByCategory('Vegetable', (list: ShoppingItem[]) => {
-        if (list.length > 0) {
-          this.vegetableList = [...list];
-          this.getVegetableCount(list);
-          this.initCategory('Vegetable')
+    this.isLoading = true;
+    this.shoppingListItemTable.getRdbStore(this.getUIContext().getHostContext() as common.UIAbilityContext,
+      (ready: boolean) => {
+        if (!ready) {
+          this.isLoading = false;
+          this.loadError = true;
+          return;
         }
+        let remaining: number = Constants.CATEGORY_KEYS.length;
+        let failed: boolean = false;
+        Constants.CATEGORY_KEYS.forEach((category: string) => {
+          this.shoppingListItemTable.queryItemsByCategory(category, (list: ShoppingItem[] | undefined) => {
+            if (list === undefined) {
+              failed = true;
+            } else {
+              this.setCategoryList(category, list);
+            }
+            remaining--;
+            if (remaining === 0) {
+              this.loadError = failed;
+              this.isLoading = false;
+            }
+          });
+        });
       });
-
-      this.shoppingListItemTable.queryItemsByCategory('Fruit', (list: ShoppingItem[]) => {
-        if (list.length > 0) {
-          this.fruitList = [...list];
-          this.getFruitCount(list);
-          this.initCategory('Fruit');
-        }
-      });
-
-      this.shoppingListItemTable.queryItemsByCategory('Food', (list: ShoppingItem[]) => {
-        if (list.length > 0) {
-          this.foodList = [...list];
-          this.getFoodCount(list);
-          this.initCategory('Food');
-        }
-      });
-
-      this.shoppingListItemTable.queryItemsByCategory('Cloth', (list: ShoppingItem[]) => {
-        if (list.length > 0) {
-          this.clothList = [...list];
-          this.getClothCount(list);
-          this.initCategory('Cloth');
-        }
-      });
-
-      this.shoppingListItemTable.queryItemsByCategory('Jewelry', (list: ShoppingItem[]) => {
-        if (list.length > 0) {
-          this.jewelryList = [...list];
-          this.getJewelryCount(list);
-          this.initCategory('Jewelry');
-        }
-      });
-
-      this.shoppingListItemTable.queryItemsByCategory('HomeFurnishing', (list: ShoppingItem[]) => {
-        if (list.length > 0) {
-          this.homeFurnishingList = [...list];
-          this.getHomeFurnishingCount(list);
-          this.initCategory('HomeFurnishing');
-        }
-      });
-
-      this.shoppingListItemTable.queryItemsByCategory('Other', (list: ShoppingItem[]) => {
-        if (list.length > 0) {
-          this.otherList = [...list];
-          this.getOtherCount(list);
-          this.initCategory('Other');
-        }
-      });
-    })
   }
 
   // aboutToDisappear() {
@@ -115,66 +86,85 @@ struct Index {
 
   build() {
     Column() {
-      Flex({ justifyContent: FlexAlign.SpaceBetween, direction: FlexDirection.Row, alignItems: ItemAlign.Center }) {
-        Flex({ justifyContent: FlexAlign.Start, direction: FlexDirection.Row, alignItems: ItemAlign.Center }) {
-          Row() {
-            Image($r('app.media.basket')).width(40).height(40)
-          }
-          .width(40)
-          .height(40)
-          .borderRadius(20)
-          .clip(true)
-          .alignItems(VerticalAlign.Center)
-          .justifyContent(FlexAlign.Center)
+      Row() {
+        Column() {
+          Text('My List')
+            .fontSize(30)
+            .fontWeight(FontWeight.Bold)
+            .fontColor(this.isDay ? Constants.DARK_TEXT_COLOR : Constants.LIGHT_TEXT_COLOR)
+          Text(this.totalItemCount() == 0 ? '0 items' : this.totalDoneCount() + ' of ' + this.totalItemCount() + ' items bought')
+            .fontSize(14)
+            .fontColor(this.isDay ? Constants.DARK_TEXT_SUBTITLE_COLOR : Constants.LIGHT_TEXT_SUBTITLE_COLOR)
+            .margin({ top: 4 })
+        }.alignItems(HorizontalAlign.Start).layoutWeight(1)
 
-          Column() {
-            Text(this.username)
-              .fontSize(18)
-              .fontColor(this.isDay ? Constants.DARK_TEXT_COLOR : Constants.LIGHT_TEXT_COLOR)
-            Text('shopping list')
-              .fontSize(13)
-              .fontColor(this.isDay ? Constants.DARK_TEXT_SUBTITLE_COLOR : Constants.LIGHT_TEXT_SUBTITLE_COLOR)
-          }.margin({ left: 5 }).alignItems(HorizontalAlign.Start).justifyContent(FlexAlign.Center)
-        }.width(150).height('100%')
-
-        Flex({ justifyContent: FlexAlign.SpaceBetween, direction: FlexDirection.Row, alignItems: ItemAlign.Center }) {
-          Toggle({ type: ToggleType.Switch, isOn: false })
-            .selectedColor(Constants.DARK_SWITCH_SELECTED_COLOR)
-            .width(25)
-            .height(25)
-            .switchPointColor(Constants.LIGHT_SWITCH_POINTER_COLOR)
-            .onChange((isOn: boolean) => {
-              if (isOn) {
-                this.isDay = false;
-                this.dayTimeBackColor = Constants.DARK_BACKGROUND_COLOR;
-              } else {
-                this.isDay = true;
-                this.dayTimeBackColor = Constants.LIGHT_BACKGROUND_COLOR;
-              }
-            })
-
-          Image($r('app.media.add'))
-            .width(23).height(23).margin({ left: 12 }).onClick(() => {
+        Button('+ Add')
+          .height(44)
+          .fontSize(15)
+          .fontWeight(FontWeight.Medium)
+          .fontColor('#FFFFFF')
+          .backgroundColor('#6024B5')
+          .borderRadius(14)
+          .onClick(() => {
             if (this.dialogController != null) {
-              this.dialogController.open()
+              this.dialogController.open();
             }
           })
-          if (this.availableCate.length > 0) {
-            Image(this.isDay ? $r('app.media.delete_dark') : $r('app.media.delete_light'))
-              .width(22).height(22).margin({ left: 12 }).onClick(() => {
-              if (this.dialogController != null) {
-                this.reminderDialogueController.open()
-              }
-            })
-          }
-        }.width(100).height(34)
       }
       .width('100%')
-      .height(70)
-      .backgroundColor(this.isDay ? Constants.LIGHT_HEADER_BACKGROUND_COLOR : Constants.DARK_HEADER_BACKGROUND_COLOR)
-      .padding({ top: 5, left: 10, bottom: 15, right: 20 })
+      .padding({ left: 22, right: 22, top: 22, bottom: 14 })
 
-      if (this.availableCate.length > 0) {
+      Row() {
+        Text('Dark mode')
+          .fontSize(14)
+          .fontColor(this.isDay ? Constants.DARK_TEXT_SUBTITLE_COLOR : Constants.LIGHT_TEXT_SUBTITLE_COLOR)
+        Toggle({ type: ToggleType.Switch, isOn: !this.isDay })
+          .selectedColor(Constants.DARK_SWITCH_SELECTED_COLOR)
+          .switchPointColor(Constants.LIGHT_SWITCH_POINTER_COLOR)
+          .margin({ left: 8 })
+          .onChange((isOn: boolean) => {
+            this.isDay = !isOn;
+            this.dayTimeBackColor = this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR;
+          })
+        Blank()
+        if (this.availableCate.length > 0) {
+          Button('Clear list')
+            .fontSize(14)
+            .fontColor(this.isDay ? Constants.DARK_TEXT_SUBTITLE_COLOR : Constants.LIGHT_TEXT_SUBTITLE_COLOR)
+            .backgroundColor(Color.Transparent)
+            .onClick(() => {
+              this.reminderDialogueController.open();
+            })
+        }
+      }
+      .width('100%')
+      .height(48)
+      .padding({ left: 22, right: 22 })
+
+      if (this.isLoading) {
+        Column() {
+          Text('Loading list…')
+            .fontSize(16)
+            .fontColor(this.isDay ? Constants.DARK_TEXT_SUBTITLE_COLOR : Constants.LIGHT_TEXT_SUBTITLE_COLOR)
+        }.width('100%').layoutWeight(1).justifyContent(FlexAlign.Center)
+      } else if (this.loadError) {
+        Column() {
+          Text('Could not load your list')
+            .fontSize(20)
+            .fontWeight(FontWeight.Bold)
+            .fontColor(this.isDay ? Constants.DARK_TEXT_COLOR : Constants.LIGHT_TEXT_COLOR)
+          Button('Try again')
+            .height(44)
+            .margin({ top: 18 })
+            .fontColor('#FFFFFF')
+            .backgroundColor('#6024B5')
+            .borderRadius(14)
+            .onClick(() => {
+              this.isLoading = true;
+              this.aboutToAppear();
+            })
+        }.width('100%').layoutWeight(1).justifyContent(FlexAlign.Center)
+      } else if (this.availableCate.length > 0) {
         List() {
           ForEach(this.availableCate, (category: string) => {
             ListItemGroup({ header: this.itemHead(category) }) {
@@ -186,10 +176,10 @@ struct Index {
                         shoppingItem: item,
                         index: index,
                         isDay: this.isDay,
-                        selectionColor: this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR,
-                        doneColor: this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR,
-                        onEditItem: (currentSelection: number, selectionCategory: string, changedValue: string, changedParameter: string, oldName?: string) => {
-                          this.onEditItem(currentSelection, selectionCategory, changedValue, changedParameter, oldName ?? '');
+                        selectionColor: item.done ? (this.isDay ? Constants.ITEM_SELECTION_COLOR1 : '#35204F') : (this.isDay ? '#FFFFFF' : '#22113D'),
+                        doneColor: item.done ? (this.isDay ? Constants.ITEM_DONE_COLOR1 : '#35204F') : (this.isDay ? '#FFFFFF' : '#22113D'),
+                        onEditItem: (currentSelection: number, selectionCategory: string, changedValue: string, changedParameter: string, oldName?: string, onComplete?: (success: boolean) => void) => {
+                          this.onEditItem(currentSelection, selectionCategory, changedValue, changedParameter, oldName ?? '', onComplete ?? (() => {}));
                         },
                         onDeleteItem: (currentSelection: number, selectionCategory: string) => {
                           this.onDeleteItem(currentSelection, selectionCategory);
@@ -206,10 +196,10 @@ struct Index {
                         shoppingItem: item,
                         index: index,
                         isDay: this.isDay,
-                        selectionColor: this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR,
-                        doneColor: this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR,
-                        onEditItem: (currentSelection: number, selectionCategory: string, changedValue: string, changedParameter: string, oldName?: string) => {
-                          this.onEditItem(currentSelection, selectionCategory, changedValue, changedParameter, oldName ?? '');
+                        selectionColor: item.done ? (this.isDay ? Constants.ITEM_SELECTION_COLOR1 : '#35204F') : (this.isDay ? '#FFFFFF' : '#22113D'),
+                        doneColor: item.done ? (this.isDay ? Constants.ITEM_DONE_COLOR1 : '#35204F') : (this.isDay ? '#FFFFFF' : '#22113D'),
+                        onEditItem: (currentSelection: number, selectionCategory: string, changedValue: string, changedParameter: string, oldName?: string, onComplete?: (success: boolean) => void) => {
+                          this.onEditItem(currentSelection, selectionCategory, changedValue, changedParameter, oldName ?? '', onComplete ?? (() => {}));
                         },
                         onDeleteItem: (currentSelection: number, selectionCategory: string) => {
                           this.onDeleteItem(currentSelection, selectionCategory);
@@ -226,10 +216,10 @@ struct Index {
                         shoppingItem: item,
                         index: index,
                         isDay: this.isDay,
-                        selectionColor: this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR,
-                        doneColor: this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR,
-                        onEditItem: (currentSelection: number, selectionCategory: string, changedValue: string, changedParameter: string, oldName?: string) => {
-                          this.onEditItem(currentSelection, selectionCategory, changedValue, changedParameter, oldName ?? '');
+                        selectionColor: item.done ? (this.isDay ? Constants.ITEM_SELECTION_COLOR1 : '#35204F') : (this.isDay ? '#FFFFFF' : '#22113D'),
+                        doneColor: item.done ? (this.isDay ? Constants.ITEM_DONE_COLOR1 : '#35204F') : (this.isDay ? '#FFFFFF' : '#22113D'),
+                        onEditItem: (currentSelection: number, selectionCategory: string, changedValue: string, changedParameter: string, oldName?: string, onComplete?: (success: boolean) => void) => {
+                          this.onEditItem(currentSelection, selectionCategory, changedValue, changedParameter, oldName ?? '', onComplete ?? (() => {}));
                         },
                         onDeleteItem: (currentSelection: number, selectionCategory: string) => {
                           this.onDeleteItem(currentSelection, selectionCategory);
@@ -238,18 +228,18 @@ struct Index {
                     }
                   })
                 }
-              } else if (category == 'Cloth') {
+              } else if (category == 'Clothing') {
                 if (!this.isFolded[3]) {
-                  ForEach(this.clothList, (item: ShoppingItem, index: number) => {
+                  ForEach(this.clothingList, (item: ShoppingItem, index: number) => {
                     ListItem() {
                       ShoppingListItem({
                         shoppingItem: item,
                         index: index,
                         isDay: this.isDay,
-                        selectionColor: this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR,
-                        doneColor: this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR,
-                        onEditItem: (currentSelection: number, selectionCategory: string, changedValue: string, changedParameter: string, oldName?: string) => {
-                          this.onEditItem(currentSelection, selectionCategory, changedValue, changedParameter, oldName ?? '');
+                        selectionColor: item.done ? (this.isDay ? Constants.ITEM_SELECTION_COLOR1 : '#35204F') : (this.isDay ? '#FFFFFF' : '#22113D'),
+                        doneColor: item.done ? (this.isDay ? Constants.ITEM_DONE_COLOR1 : '#35204F') : (this.isDay ? '#FFFFFF' : '#22113D'),
+                        onEditItem: (currentSelection: number, selectionCategory: string, changedValue: string, changedParameter: string, oldName?: string, onComplete?: (success: boolean) => void) => {
+                          this.onEditItem(currentSelection, selectionCategory, changedValue, changedParameter, oldName ?? '', onComplete ?? (() => {}));
                         },
                         onDeleteItem: (currentSelection: number, selectionCategory: string) => {
                           this.onDeleteItem(currentSelection, selectionCategory);
@@ -266,10 +256,10 @@ struct Index {
                         shoppingItem: item,
                         index: index,
                         isDay: this.isDay,
-                        selectionColor: this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR,
-                        doneColor: this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR,
-                        onEditItem: (currentSelection: number, selectionCategory: string, changedValue: string, changedParameter: string, oldName?: string) => {
-                          this.onEditItem(currentSelection, selectionCategory, changedValue, changedParameter, oldName ?? '');
+                        selectionColor: item.done ? (this.isDay ? Constants.ITEM_SELECTION_COLOR1 : '#35204F') : (this.isDay ? '#FFFFFF' : '#22113D'),
+                        doneColor: item.done ? (this.isDay ? Constants.ITEM_DONE_COLOR1 : '#35204F') : (this.isDay ? '#FFFFFF' : '#22113D'),
+                        onEditItem: (currentSelection: number, selectionCategory: string, changedValue: string, changedParameter: string, oldName?: string, onComplete?: (success: boolean) => void) => {
+                          this.onEditItem(currentSelection, selectionCategory, changedValue, changedParameter, oldName ?? '', onComplete ?? (() => {}));
                         },
                         onDeleteItem: (currentSelection: number, selectionCategory: string) => {
                           this.onDeleteItem(currentSelection, selectionCategory);
@@ -286,10 +276,10 @@ struct Index {
                         shoppingItem: item,
                         index: index,
                         isDay: this.isDay,
-                        selectionColor: this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR,
-                        doneColor: this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR,
-                        onEditItem: (currentSelection: number, selectionCategory: string, changedValue: string, changedParameter: string, oldName?: string) => {
-                          this.onEditItem(currentSelection, selectionCategory, changedValue, changedParameter, oldName ?? '');
+                        selectionColor: item.done ? (this.isDay ? Constants.ITEM_SELECTION_COLOR1 : '#35204F') : (this.isDay ? '#FFFFFF' : '#22113D'),
+                        doneColor: item.done ? (this.isDay ? Constants.ITEM_DONE_COLOR1 : '#35204F') : (this.isDay ? '#FFFFFF' : '#22113D'),
+                        onEditItem: (currentSelection: number, selectionCategory: string, changedValue: string, changedParameter: string, oldName?: string, onComplete?: (success: boolean) => void) => {
+                          this.onEditItem(currentSelection, selectionCategory, changedValue, changedParameter, oldName ?? '', onComplete ?? (() => {}));
                         },
                         onDeleteItem: (currentSelection: number, selectionCategory: string) => {
                           this.onDeleteItem(currentSelection, selectionCategory);
@@ -306,10 +296,10 @@ struct Index {
                         shoppingItem: item,
                         index: index,
                         isDay: this.isDay,
-                        selectionColor: this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR,
-                        doneColor: this.isDay ? Constants.LIGHT_BACKGROUND_COLOR : Constants.DARK_BACKGROUND_COLOR,
-                        onEditItem: (currentSelection: number, selectionCategory: string, changedValue: string, changedParameter: string, oldName?: string) => {
-                          this.onEditItem(currentSelection, selectionCategory, changedValue, changedParameter, oldName ?? '');
+                        selectionColor: item.done ? (this.isDay ? Constants.ITEM_SELECTION_COLOR1 : '#35204F') : (this.isDay ? '#FFFFFF' : '#22113D'),
+                        doneColor: item.done ? (this.isDay ? Constants.ITEM_DONE_COLOR1 : '#35204F') : (this.isDay ? '#FFFFFF' : '#22113D'),
+                        onEditItem: (currentSelection: number, selectionCategory: string, changedValue: string, changedParameter: string, oldName?: string, onComplete?: (success: boolean) => void) => {
+                          this.onEditItem(currentSelection, selectionCategory, changedValue, changedParameter, oldName ?? '', onComplete ?? (() => {}));
                         },
                         onDeleteItem: (currentSelection: number, selectionCategory: string) => {
                           this.onDeleteItem(currentSelection, selectionCategory);
@@ -324,27 +314,35 @@ struct Index {
         }
         .listDirection(Axis.Vertical)
         .width('100%')
+        .layoutWeight(1)
+        .padding({ left: 16, right: 16, bottom: 24 })
         .scrollBar(BarState.Auto)
       } else {
-        Flex({ justifyContent: FlexAlign.Center, alignItems: ItemAlign.Center }) {
-          Text('Shopping list is empty, add now')
-            .height(20)
+        Column() {
+          Text('Your list is empty')
+            .fontSize(22)
+            .fontWeight(FontWeight.Bold)
             .fontColor(this.isDay ? Constants.DARK_TEXT_COLOR : Constants.LIGHT_TEXT_COLOR)
-            .textAlign(TextAlign.End)
-          Column() {
-            Image($r('app.media.add'))
-              .width(20).height(20).onClick(() => {
+          Text('Add an item to start your list.')
+            .fontSize(15)
+            .fontColor(this.isDay ? Constants.DARK_TEXT_SUBTITLE_COLOR : Constants.LIGHT_TEXT_SUBTITLE_COLOR)
+            .margin({ top: 8, bottom: 20 })
+          Button('Add item')
+            .height(44)
+            .fontSize(15)
+            .fontColor('#FFFFFF')
+            .backgroundColor('#6024B5')
+            .borderRadius(14)
+            .onClick(() => {
               if (this.dialogController != null) {
-                this.dialogController.open()
+                this.dialogController.open();
               }
             })
-          }
-          .alignItems(HorizontalAlign.Center)
-          .width(20)
-          .height(20)
-          .justifyContent(FlexAlign.Center)
-          .margin({ left: 10 })
-        }.width('100%').height('80%')
+        }
+        .width('100%')
+        .layoutWeight(1)
+        .justifyContent(FlexAlign.Center)
+        .alignItems(HorizontalAlign.Center)
       }
     }.width('100%').height('100%').justifyContent(FlexAlign.Start).backgroundColor(this.dayTimeBackColor)
 
@@ -356,72 +354,62 @@ struct Index {
       Row() {
         if (category == 'Vegetable') {
           Row() {
-            Image(this.isFolded[0] ? $r('app.media.right_dark') : $r('app.media.down_dark'))
+            Image(this.isFolded[0] ? (this.isDay ? $r('app.media.right_dark') : $r('app.media.right_light')) : (this.isDay ? $r('app.media.down_dark') : $r('app.media.down_light')))
               .width(10).height(10)
           }
           .width(20)
           .height(20)
-          .onClick((event: ClickEvent) => {
-            this.isFolded[0] = !this.isFolded[0];
-          })
+
           .alignItems(VerticalAlign.Center)
           .justifyContent(FlexAlign.Center)
 
           Image($r('app.media.vege')).width(20).height(20).margin({ left: 5 })
         } else if (category == 'Fruit') {
           Row() {
-            Image(this.isFolded[1] ? $r('app.media.right_dark') : $r('app.media.down_dark'))
+            Image(this.isFolded[1] ? (this.isDay ? $r('app.media.right_dark') : $r('app.media.right_light')) : (this.isDay ? $r('app.media.down_dark') : $r('app.media.down_light')))
               .width(10).height(10)
           }
           .width(20)
           .height(20)
-          .onClick((event: ClickEvent) => {
-            this.isFolded[1] = !this.isFolded[1];
-          })
+
           .alignItems(VerticalAlign.Center)
           .justifyContent(FlexAlign.Center)
 
           Image($r('app.media.fruit')).width(20).height(20).margin({ left: 5 })
         } else if (category == 'Food') {
           Row() {
-            Image(this.isFolded[2] ? $r('app.media.right_dark') : $r('app.media.down_dark'))
+            Image(this.isFolded[2] ? (this.isDay ? $r('app.media.right_dark') : $r('app.media.right_light')) : (this.isDay ? $r('app.media.down_dark') : $r('app.media.down_light')))
               .width(10).height(10)
           }
           .width(20)
           .height(20)
-          .onClick((event: ClickEvent) => {
-            this.isFolded[2] = !this.isFolded[2];
-          })
+
           .alignItems(VerticalAlign.Center)
           .justifyContent(FlexAlign.Center)
 
           Image($r('app.media.food')).width(20).height(20).margin({ left: 5 })
         }
-        else if (category == 'Cloth') {
+        else if (category == 'Clothing') {
           Row() {
-            Image(this.isFolded[3] ? $r('app.media.right_dark') : $r('app.media.down_dark'))
+            Image(this.isFolded[3] ? (this.isDay ? $r('app.media.right_dark') : $r('app.media.right_light')) : (this.isDay ? $r('app.media.down_dark') : $r('app.media.down_light')))
               .width(10).height(10)
           }
           .width(20)
           .height(20)
-          .onClick((event: ClickEvent) => {
-            this.isFolded[3] = !this.isFolded[3];
-          })
+
           .alignItems(VerticalAlign.Center)
           .justifyContent(FlexAlign.Center)
 
-          Image($r('app.media.cloth')).width(20).height(20).margin({ left: 5 })
+          Image($r('app.media.clothing')).width(20).height(20).margin({ left: 5 })
         }
         else if (category == 'Jewelry') {
           Row() {
-            Image(this.isFolded[4] ? $r('app.media.right_dark') : $r('app.media.down_dark'))
+            Image(this.isFolded[4] ? (this.isDay ? $r('app.media.right_dark') : $r('app.media.right_light')) : (this.isDay ? $r('app.media.down_dark') : $r('app.media.down_light')))
               .width(10).height(10)
           }
           .width(20)
           .height(20)
-          .onClick((event: ClickEvent) => {
-            this.isFolded[4] = !this.isFolded[4];
-          })
+
           .alignItems(VerticalAlign.Center)
           .justifyContent(FlexAlign.Center)
 
@@ -429,14 +417,12 @@ struct Index {
         }
         else if (category == 'HomeFurnishing') {
           Row() {
-            Image(this.isFolded[5] ? $r('app.media.right_dark') : $r('app.media.down_dark'))
+            Image(this.isFolded[5] ? (this.isDay ? $r('app.media.right_dark') : $r('app.media.right_light')) : (this.isDay ? $r('app.media.down_dark') : $r('app.media.down_light')))
               .width(10).height(10)
           }
           .width(20)
           .height(20)
-          .onClick((event: ClickEvent) => {
-            this.isFolded[5] = !this.isFolded[5];
-          })
+
           .alignItems(VerticalAlign.Center)
           .justifyContent(FlexAlign.Center)
 
@@ -444,27 +430,26 @@ struct Index {
         }
         else {
           Row() {
-            Image(this.isFolded[6] ? $r('app.media.right_dark') : $r('app.media.down_dark'))
+            Image(this.isFolded[6] ? (this.isDay ? $r('app.media.right_dark') : $r('app.media.right_light')) : (this.isDay ? $r('app.media.down_dark') : $r('app.media.down_light')))
               .width(10).height(10)
 
           }
           .width(20)
           .height(20)
-          .onClick((event: ClickEvent) => {
-            this.isFolded[6] = !this.isFolded[6];
-          })
+
           .alignItems(VerticalAlign.Center)
           .justifyContent(FlexAlign.Center)
 
           Image($r('app.media.goods')).width(20).height(20).margin({ left: 5 })
         }
 
-        Text(category)
-          .fontSize(16)
+        Text(Constants.categoryLabel(category))
+          .fontSize(17)
+          .fontWeight(FontWeight.Medium)
           .margin({ left: 10 })
           .fontColor(this.isDay ? Constants.DARK_TEXT_COLOR : Constants.LIGHT_TEXT_COLOR)
       }
-      .width('50%').margin({ left: 10 })
+      .width('70%')
       .alignItems(VerticalAlign.Center).justifyContent(FlexAlign.Start)
 
       Row() {
@@ -477,8 +462,8 @@ struct Index {
         } else if (category == 'Food') {
           Text(String(this.foodDoneCount)) {
           }.height(15).fontSize(13).fontColor(Constants.ITEM_COUNT_COLOR)
-        } else if (category == 'Cloth') {
-          Text(String(this.clothDoneCount)) {
+        } else if (category == 'Clothing') {
+          Text(String(this.clothingDoneCount)) {
           }.height(15).fontSize(13).fontColor(Constants.ITEM_COUNT_COLOR)
         } else if (category == 'Jewelry') {
           Text(String(this.jewelryDoneCount)) {
@@ -505,8 +490,8 @@ struct Index {
           Text(String(this.foodTotalCount)) {
           }.height(15).fontSize(13).fontColor(Constants.ITEM_COUNT_COLOR)
         }
-        else if (category == 'Cloth') {
-          Text(String(this.clothTotalCount)) {
+        else if (category == 'Clothing') {
+          Text(String(this.clothingTotalCount)) {
           }.height(15).fontSize(13).fontColor(Constants.ITEM_COUNT_COLOR)
         }
         else if (category == 'Jewelry') {
@@ -521,9 +506,37 @@ struct Index {
           Text(String(this.otherTotalCount)) {
           }.height(15).fontSize(13).fontColor(Constants.ITEM_COUNT_COLOR)
         }
-      }.width('50%').margin({ right: 10 })
+      }.width('30%')
       .alignItems(VerticalAlign.Center).justifyContent(FlexAlign.End)
-    }.margin({ top: 5 })
+    }
+    .width('100%')
+    .height(58)
+    .padding({ left: 14, right: 14 })
+    .margin({ top: 14 })
+    .backgroundColor(this.isDay ? '#FFFFFF' : '#22113D')
+    .borderRadius(16)
+    .onClick(() => {
+      this.toggleCategory(category);
+    })
+  }
+
+  toggleCategory(category: string): void {
+    let index: number = Constants.CATEGORY_KEYS.indexOf(category);
+    if (index >= 0) {
+      let folded: boolean[] = [...this.isFolded];
+      folded[index] = !folded[index];
+      this.isFolded = folded;
+    }
+  }
+
+  totalItemCount(): number {
+    return this.vegetablesTotalCount + this.fruitTotalCount + this.foodTotalCount + this.clothingTotalCount +
+      this.jewelryTotalCount + this.homeFurnishingTotalCount + this.otherTotalCount;
+  }
+
+  totalDoneCount(): number {
+    return this.vegetablesDoneCount + this.fruitDoneCount + this.foodDoneCount + this.clothingDoneCount +
+      this.jewelryDoneCount + this.homeFurnishingDoneCount + this.otherDoneCount;
   }
 
   dialogController: CustomDialogController | null = new CustomDialogController({
@@ -550,9 +563,6 @@ struct Index {
   }
 
   onAccept(category: string, name: string, quantity: number) {
-    if (!this.availableCate.includes(category)) {
-      this.availableCate.push(category)
-    }
     let item: ShoppingItem = new ShoppingItem(name, quantity, false, category);
     switch (category) {
       case 'Vegetable':
@@ -564,8 +574,8 @@ struct Index {
       case 'Food':
         this.reactiveRefreshList(this.foodList, name, quantity, item, 'Food');
         break;
-      case 'Cloth':
-        this.reactiveRefreshList(this.clothList, name, quantity, item, 'Cloth');
+      case 'Clothing':
+        this.reactiveRefreshList(this.clothingList, name, quantity, item, 'Clothing');
         break;
       case 'Jewelry':
         this.reactiveRefreshList(this.jewelryList, name, quantity, item, 'Jewelry');
@@ -585,6 +595,7 @@ struct Index {
 
   reminderModificationController: CustomDialogController = new CustomDialogController({
     builder: ReminderModification({
+      isDay: this.isDay,
       cancelModification: () => {
         this.onCancelModification()
       },
@@ -595,54 +606,28 @@ struct Index {
   })
 
   onCancelModification() {
-    console.info('Callback when the first button is clicked')
+    this.modificationCallback(false);
   }
 
   onConfirmModification() {
-    let item: ShoppingItem = this.modificationItems[this.modificationItemIndex];
-    let name: string = this.modificationItems[this.beforeModificationItemIndex].name;
-    let quantity: number = item.quantity;
-    let done: boolean = item.done;
-    let category: string = item.category;
-    item.name = this.modifiedName;
-    this.modificationItems[this.beforeModificationItemIndex].quantity = quantity;
-    item.done = done;
-    this.shoppingListItemTable.deleteItem(item, (res: ShoppingItem) => {
-      if (res != undefined) {
-        let newItem: ShoppingItem = new ShoppingItem(name, quantity, done, this.modificationCategory);
-        this.shoppingListItemTable.updateItem(newItem, (res: ShoppingItem) => {
-          this.modificationItems.splice(this.modificationItemIndex, 1);
-          switch (category) {
-            case 'Vegetable':
-              this.vegetableList = [...this.modificationItems];
-              break;
-            case 'Fruit':
-              this.fruitList = [...this.modificationItems];
-              break;
-            case 'Food':
-              this.foodList = [...this.modificationItems];
-              break;
-            case 'Cloth':
-              this.clothList = [...this.modificationItems];
-              break;
-            case 'Jewelry':
-              this.jewelryList = [...this.modificationItems];
-              break;
-            case 'HomeFurnishing':
-              this.homeFurnishingList = [...this.modificationItems];
-              break;
-            default:
-              this.otherList = [...this.modificationItems];
-              break;
-          }
-        })
+    const source: ShoppingItem = this.modificationItems[this.modificationItemIndex];
+    const replacement = new ShoppingItem(this.modifiedName, source.quantity, source.done, source.category);
+    this.shoppingListItemTable.renameItem(source, replacement, true, (success: boolean) => {
+      if (success) {
+        const list: ShoppingItem[] = [...this.modificationItems];
+        list[this.modificationItemIndex] = replacement;
+        list.splice(this.beforeModificationItemIndex, 1);
+        this.setCategoryList(this.modificationCategory, list);
+      } else {
+        this.showStorageError();
       }
-    })
-
+      this.modificationCallback(success);
+    });
   }
 
   reminderDialogueController: CustomDialogController = new CustomDialogController({
     builder: ReminderDialogue({
+      isDay: this.isDay,
       cancelDeleteAll: () => {
         this.onCancelDeleteAll()
       },
@@ -657,7 +642,11 @@ struct Index {
   }
 
   onConfirmDeleteAll() {
-    this.shoppingListItemTable.deleteAll(() => {
+    this.shoppingListItemTable.deleteAll((rows: number | undefined) => {
+      if (rows === undefined) {
+        this.showStorageError();
+        return;
+      }
       this.availableCate = [];
       this.vegetablesTotalCount = 0;
       this.vegetablesDoneCount = 0;
@@ -668,9 +657,9 @@ struct Index {
       this.foodTotalCount = 0;
       this.foodDoneCount = 0;
       this.foodList = [];
-      this.clothTotalCount = 0;
-      this.clothDoneCount = 0;
-      this.clothList = [];
+      this.clothingTotalCount = 0;
+      this.clothingDoneCount = 0;
+      this.clothingList = [];
       this.jewelryTotalCount = 0;
       this.jewelryDoneCount = 0;
       this.jewelryList = [];
@@ -683,227 +672,154 @@ struct Index {
     })
   }
 
-  changeName(tempList: ShoppingItem[], currentSelection: number, selectionCategory: string, changedValue: string, currentSelectionItem: ShoppingItem, oldName: string, callback: Function) {
-    let exists: boolean = false;
-    for (let i = 0; i < tempList.length; i++) {
-      if (tempList[i].name == changedValue && i != currentSelection) {
-        exists = true;
-        this.modificationItems = tempList;
-        this.modifiedName = oldName;
-        this.modificationCategory = selectionCategory;
-        this.modificationItemIndex = currentSelection;
-        this.beforeModificationItemIndex = i;
-        this.reminderModificationController.open();
-        break;
-      }
-      if (!exists) {
-        this.shoppingListItemTable.insertItem(currentSelectionItem, (res: ShoppingItem) => {
-          if (res != undefined) {
-            callback(tempList);
-          }
-        })
-        let oldItem: ShoppingItem = currentSelectionItem;
-        oldItem.name = oldName;
-        this.shoppingListItemTable.deleteItem(oldItem, (res: ShoppingItem) => {
-          if (res != undefined) {
-            callback(tempList);
-          }
-        });
-      }
+  changeName(tempList: ShoppingItem[], currentSelection: number, selectionCategory: string,
+    changedValue: string, currentSelectionItem: ShoppingItem, callback: (success: boolean) => void) {
+    const duplicateIndex: number = tempList.findIndex((item: ShoppingItem, index: number) =>
+      index !== currentSelection && item.name === changedValue);
+    if (duplicateIndex >= 0) {
+      this.modificationItems = [...tempList];
+      this.modifiedName = changedValue;
+      this.modificationCategory = selectionCategory;
+      this.modificationItemIndex = currentSelection;
+      this.beforeModificationItemIndex = duplicateIndex;
+      this.modificationCallback = callback;
+      this.reminderModificationController.open();
+      return;
     }
+    const renamed = new ShoppingItem(changedValue, currentSelectionItem.quantity,
+      currentSelectionItem.done, selectionCategory);
+    this.shoppingListItemTable.renameItem(currentSelectionItem, renamed, false, (success: boolean) => {
+      if (success) {
+        tempList[currentSelection] = renamed;
+        this.setCategoryList(selectionCategory, tempList);
+      } else {
+        this.showStorageError();
+      }
+      callback(success);
+    });
   }
 
-  changeQuantity(tempList: ShoppingItem[], currentSelectionItem: ShoppingItem, callback: Function) {
-    this.shoppingListItemTable.updateItem(currentSelectionItem, (res: ShoppingItem) => {
-      if (res != undefined && res.quantity != 0) {
-        callback(tempList);
+  changeQuantity(tempList: ShoppingItem[], currentSelection: number, selectionCategory: string,
+    quantity: number, callback: (success: boolean) => void) {
+    const currentItem = tempList[currentSelection];
+    const updated = new ShoppingItem(currentItem.name, quantity, currentItem.done, selectionCategory);
+    this.shoppingListItemTable.updateItem(updated, (rows: number | undefined) => {
+      const success: boolean = rows === 1;
+      if (success) {
+        tempList[currentSelection] = updated;
+        this.setCategoryList(selectionCategory, tempList);
+      } else {
+        this.showStorageError();
       }
-    })
+      callback(success);
+    });
   }
 
-  changeDone(tempList: ShoppingItem[], currentSelectionItem: ShoppingItem, callback: Function, selectionCategory: string) {
-    this.shoppingListItemTable.updateItem(currentSelectionItem, (res: ShoppingItem) => {
-      if (res != undefined) {
-        switch (selectionCategory) {
-          case 'Vegetable':
-            this.getVegetableCount(tempList);
-            break;
-          case 'Fruit':
-            this.getFruitCount(tempList);
-            break;
-          case 'Food':
-            this.getFoodCount(tempList);
-            break;
-          case 'Cloth':
-            this.getClothCount(tempList);
-            break;
-          case 'Jewelry':
-            this.getJewelryCount(tempList);
-            break;
-          case 'HomeFurnishing':
-            this.getHomeFurnishingCount(tempList);
-            break;
-          default:
-            this.getOtherCount(tempList);
-            break;
-        }
-        callback(tempList);
+  changeDone(tempList: ShoppingItem[], currentSelection: number, selectionCategory: string,
+    done: boolean, callback: (success: boolean) => void) {
+    const currentItem = tempList[currentSelection];
+    const updated = new ShoppingItem(currentItem.name, currentItem.quantity, done, selectionCategory);
+    this.shoppingListItemTable.updateItem(updated, (rows: number | undefined) => {
+      const success: boolean = rows === 1;
+      if (success) {
+        tempList[currentSelection] = updated;
+        this.setCategoryList(selectionCategory, tempList);
+      } else {
+        this.showStorageError();
       }
-    })
+      callback(success);
+    });
   }
 
-  onEditItem(currentSelection: number, selectionCategory: string, changedValue: string, changedParameter: string, oldName: string) {
-    if (currentSelection != undefined) {
-      let tempList: ShoppingItem[] = [];
-      let currentSelectionItem: ShoppingItem;
-      switch (selectionCategory) {
-        case 'Vegetable':
-          tempList = [...this.vegetableList];
-          currentSelectionItem = this.vegetableList[currentSelection];
-          this.editItem(changedParameter, currentSelectionItem, tempList, currentSelection, selectionCategory, changedValue, oldName, (res: ShoppingItem[]) => {
-            this.vegetableList = [...res];
-          });
-          break;
-        case 'Fruit':
-          tempList = [...this.fruitList];
-          currentSelectionItem = this.fruitList[currentSelection];
-          this.editItem(changedParameter, currentSelectionItem, tempList, currentSelection, selectionCategory, changedValue, oldName, (res: ShoppingItem[]) => {
-            this.fruitList = [...res];
-          });
-          break;
-        case 'Food':
-          tempList = [...this.foodList];
-          currentSelectionItem = this.foodList[currentSelection];
-          this.editItem(changedParameter, currentSelectionItem, tempList, currentSelection, selectionCategory, changedValue, oldName, (res: ShoppingItem[]) => {
-            this.foodList = [...res];
-          });
-          break;
-        case 'Cloth':
-          tempList = [...this.clothList];
-          currentSelectionItem = this.clothList[currentSelection];
-          this.editItem(changedParameter, currentSelectionItem, tempList, currentSelection, selectionCategory, changedValue, oldName, (res: ShoppingItem[]) => {
-            this.clothList = [...res];
-          });
-          break;
-        case 'Jewelry':
-          tempList = [...this.jewelryList];
-          currentSelectionItem = this.jewelryList[currentSelection];
-          this.editItem(changedParameter, currentSelectionItem, tempList, currentSelection, selectionCategory, changedValue, oldName, (res: ShoppingItem[]) => {
-            this.jewelryList = [...res];
-          });
-          break;
-        case 'HomeFurnishing':
-          tempList = [...this.homeFurnishingList];
-          currentSelectionItem = this.homeFurnishingList[currentSelection];
-          this.editItem(changedParameter, currentSelectionItem, tempList, currentSelection, selectionCategory, changedValue, oldName, (res: ShoppingItem[]) => {
-            this.homeFurnishingList = [...res];
-          });
-          break;
-        default:
-          tempList = [...this.otherList];
-          currentSelectionItem = this.otherList[currentSelection];
-          this.editItem(changedParameter, currentSelectionItem, tempList, currentSelection, selectionCategory, changedValue, oldName, (res: ShoppingItem[]) => {
-            this.otherList = [...res];
-          });
-          break;
-      }
+  onEditItem(currentSelection: number, selectionCategory: string, changedValue: string,
+    changedParameter: string, oldName: string, callback: (success: boolean) => void = () => {}) {
+    const tempList: ShoppingItem[] = this.getCategoryList(selectionCategory);
+    if (currentSelection < 0 || currentSelection >= tempList.length) {
+      callback(false);
+      return;
+    }
+    if (changedParameter === 'name') {
+      this.changeName(tempList, currentSelection, selectionCategory, changedValue,
+        tempList[currentSelection], callback);
+    } else if (changedParameter === 'quantity') {
+      this.changeQuantity(tempList, currentSelection, selectionCategory, Number(changedValue), callback);
+    } else {
+      this.changeDone(tempList, currentSelection, selectionCategory, changedValue === 'true', callback);
     }
   }
 
   onDeleteItem(currentSelection: number, selectionCategory: string) {
-    let tempList: ShoppingItem[] = [];
-    switch (selectionCategory) {
+    const list: ShoppingItem[] = this.getCategoryList(selectionCategory);
+    if (currentSelection < 0 || currentSelection >= list.length) {
+      return;
+    }
+    this.shoppingListItemTable.deleteItem(list[currentSelection], (rows: number | undefined) => {
+      if (rows === 1) {
+        list.splice(currentSelection, 1);
+        this.setCategoryList(selectionCategory, list);
+      } else {
+        this.showStorageError();
+      }
+    });
+  }
+
+  getCategoryList(category: string): ShoppingItem[] {
+    switch (category) {
+      case 'Vegetable': return [...this.vegetableList];
+      case 'Fruit': return [...this.fruitList];
+      case 'Food': return [...this.foodList];
+      case 'Clothing': return [...this.clothingList];
+      case 'Jewelry': return [...this.jewelryList];
+      case 'HomeFurnishing': return [...this.homeFurnishingList];
+      default: return [...this.otherList];
+    }
+  }
+
+  setCategoryList(category: string, list: ShoppingItem[]) {
+    switch (category) {
       case 'Vegetable':
-        this.shoppingListItemTable.deleteItem(this.vegetableList[currentSelection], (result: boolean) => {
-          if (result != false) {
-            tempList = [...this.vegetableList];
-            tempList.splice(currentSelection, 1);
-            this.getVegetableCount(tempList);
-            this.vegetableList = [...tempList];
-            if (this.vegetableList.length <= 0) {
-              this.removeCate(selectionCategory);
-            }
-          }
-        })
+        this.vegetableList = [...list];
+        this.getVegetableCount(list);
         break;
       case 'Fruit':
-        this.shoppingListItemTable.deleteItem(this.fruitList[currentSelection], (result: boolean) => {
-          if (result != false) {
-            tempList = [...this.fruitList];
-            tempList.splice(currentSelection, 1);
-            this.getFruitCount(tempList);
-            this.fruitList = [...tempList];
-            if (this.fruitList.length <= 0) {
-              this.removeCate(selectionCategory);
-            }
-          }
-        });
+        this.fruitList = [...list];
+        this.getFruitCount(list);
         break;
       case 'Food':
-        this.shoppingListItemTable.deleteItem(this.foodList[currentSelection], (result: boolean) => {
-          if (result != false) {
-            tempList = [...this.foodList];
-            tempList.splice(currentSelection, 1);
-            this.getFoodCount(tempList);
-            this.foodList = [...tempList];
-            if (this.foodList.length <= 0) {
-              this.removeCate(selectionCategory);
-            }
-          }
-        });
+        this.foodList = [...list];
+        this.getFoodCount(list);
         break;
-      case 'Cloth':
-        this.shoppingListItemTable.deleteItem(this.clothList[currentSelection], (result: Constants) => {
-          if (result == Constants.SUCCESS_CODE) {
-            tempList = [...this.clothList];
-            tempList.splice(currentSelection, 1);
-            this.getClothCount(tempList);
-            this.clothList = [...tempList];
-            if (this.clothList.length <= 0) {
-              this.removeCate(selectionCategory);
-            }
-          }
-        });
+      case 'Clothing':
+        this.clothingList = [...list];
+        this.getClothingCount(list);
         break;
-      case 'jewelry':
-        this.shoppingListItemTable.deleteItem(this.jewelryList[currentSelection], (result: Constants) => {
-          if (result == Constants.SUCCESS_CODE) {
-            tempList = [...this.jewelryList];
-            tempList.splice(currentSelection, 1);
-            this.getJewelryCount(tempList);
-            this.jewelryList = [...tempList];
-            if (this.jewelryList.length <= 0) {
-              this.removeCate(selectionCategory);
-            }
-          }
-        });
+      case 'Jewelry':
+        this.jewelryList = [...list];
+        this.getJewelryCount(list);
         break;
       case 'HomeFurnishing':
-        this.shoppingListItemTable.deleteItem(this.homeFurnishingList[currentSelection], (result: boolean) => {
-          if (result != false) {
-            tempList = [...this.homeFurnishingList];
-            tempList.splice(currentSelection, 1);
-            this.getHomeFurnishingCount(tempList);
-            this.homeFurnishingList = [...tempList];
-            if (this.homeFurnishingList.length <= 0) {
-              this.removeCate(selectionCategory);
-            }
-          }
-        });
+        this.homeFurnishingList = [...list];
+        this.getHomeFurnishingCount(list);
         break;
       default:
-        this.shoppingListItemTable.deleteItem(this.otherList[currentSelection], (result: boolean) => {
-          if (result != false) {
-            tempList = [...this.otherList];
-            tempList.splice(currentSelection, 1);
-            this.getOtherCount(tempList);
-            this.otherList = [...tempList];
-            if (this.otherList.length <= 0) {
-              this.removeCate(selectionCategory);
-            }
-          }
-        });
+        this.otherList = [...list];
+        this.getOtherCount(list);
         break;
+    }
+    if (list.length === 0) {
+      if (this.availableCate.includes(category)) {
+        this.removeCate(category);
+      }
+    } else if (!this.availableCate.includes(category)) {
+      this.initCategory(category);
+    }
+  }
+
+  showStorageError() {
+    try {
+      this.getUIContext().getPromptAction().showToast({ message: 'Could not save your list.' });
+    } catch (error) {
+      console.error('Unable to display storage error');
     }
   }
 
@@ -922,9 +838,9 @@ struct Index {
     this.foodDoneCount = list.filter((item) => item.done).length;
   }
 
-  getClothCount(list: ShoppingItem[]) {
-    this.clothTotalCount = list.length;
-    this.clothDoneCount = list.filter((item) => item.done).length;
+  getClothingCount(list: ShoppingItem[]) {
+    this.clothingTotalCount = list.length;
+    this.clothingDoneCount = list.filter((item) => item.done).length;
   }
 
   getJewelryCount(list: ShoppingItem[]) {
@@ -967,40 +883,13 @@ struct Index {
     }
     if (!exists) {
       this.showReminderName = false;
-      this.shoppingListItemTable.insertItem(item, (result: ShoppingItem) => {
-        let tempList: ShoppingItem[] = [...list];
-        if (result != undefined && result.quantity != 0) {
+      this.shoppingListItemTable.insertItem(item, (rowId: number | undefined) => {
+        if (rowId !== undefined && rowId >= 0) {
+          const tempList: ShoppingItem[] = this.getCategoryList(category);
           tempList.push(item);
-          switch (category) {
-            case 'Vegetable':
-              this.vegetableList = [...tempList];
-              this.getVegetableCount(tempList);
-              break;
-            case 'Fruit':
-              this.fruitList = [...tempList];
-              this.getFruitCount(tempList);
-              break;
-            case 'Food':
-              this.foodList = [...tempList];
-              this.getFoodCount(tempList);
-              break;
-            case 'Cloth':
-              this.clothList = [...tempList];
-              this.getClothCount(tempList);
-              break;
-            case 'Jewelry':
-              this.jewelryList = [...tempList];
-              this.getJewelryCount(tempList);
-              break;
-            case 'HomeFurnishing':
-              this.homeFurnishingList = [...tempList];
-              this.getHomeFurnishingCount(tempList);
-              break;
-            default:
-              this.otherList = [...tempList];
-              this.getOtherCount(tempList);
-              break;
-          }
+          this.setCategoryList(category, tempList);
+        } else {
+          this.showStorageError();
         }
       })
     } else {
@@ -1008,16 +897,4 @@ struct Index {
     }
   }
 
-  editItem(changedParameter: string, currentSelectionItem: ShoppingItem, tempList: ShoppingItem[],
-           currentSelection: number, selectionCategory: string, changedValue: string, oldName: string
-    , callback: Function) {
-    if (changedParameter == 'name') {
-      this.changeName(tempList, currentSelection, selectionCategory, changedValue, currentSelectionItem, oldName, callback);
-    } else if (changedParameter == 'quantity') {
-      this.changeQuantity(tempList, currentSelectionItem, callback);
-    } else {
-      currentSelectionItem.done = changedValue == 'false' ? false : true;
-      this.changeDone(tempList, currentSelectionItem, callback, selectionCategory);
-    }
-  }
 }

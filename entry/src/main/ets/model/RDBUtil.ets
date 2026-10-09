@@ -1,7 +1,7 @@
 import ShoppingItem from './ShoppingItem';
 import { BusinessError } from '@kit.BasicServicesKit';
+import { common } from '@kit.AbilityKit';
 import { relationalStore } from '@kit.ArkData';
-import { UIContext } from '@kit.ArkUI';
 
 interface StoreConfig {
   name: string
@@ -9,95 +9,134 @@ interface StoreConfig {
 }
 
 export default class RDBUtil {
-  // private store!: relationalStore.RdbStore;
   private store: relationalStore.RdbStore | undefined;
   private tableName: string;
   private sqlCreateTable: string;
-  private columns: Array<string>;
-  private uiContext: UIContext | undefined;
+  private columns: string[];
 
-  constructor(tableName: string, sqlCreateTable: string, columns: Array<string>) {
+  constructor(tableName: string, sqlCreateTable: string, columns: string[]) {
     this.tableName = tableName;
     this.sqlCreateTable = sqlCreateTable;
     this.columns = columns;
   }
 
-  getRdbStore(callback: Function = () => {
+  getRdbStore(context: common.Context, callback: (ready: boolean) => void = () => {
   }) {
     if (this.store != null) {
-      callback();
+      callback(true);
       return;
     }
-    let context = this.uiContext?.getHostContext()
     relationalStore.getRdbStore(context, storeconfig, (err: BusinessError, store: relationalStore.RdbStore) => {
       if (err) {
+        callback(false);
         return;
       }
       this.store = store;
-      this.store.executeSql(this.sqlCreateTable);
-      callback();
+      this.store.executeSql(this.sqlCreateTable).then(() => {
+        callback(true);
+      }).catch(() => {
+        this.store = undefined;
+        callback(false);
+      });
     })
   }
 
-  insertData(data: relationalStore.ValuesBucket, callback: Function = () => {
+  insertData(data: relationalStore.ValuesBucket, callback: (rowId: number | undefined) => void = () => {
   }) {
     if (this.store) {
-      this.store.insert(this.tableName, data, (err: Error, rowId) => {
+      this.store.insert(this.tableName, data, (err: Error, rowId: number) => {
         if (err) {
-          callback();
+          callback(undefined);
         } else {
           callback(rowId);
         }
       });
     } else {
-      callback();
+      callback(undefined);
     }
   }
 
-  deleteData(predicatesDel: relationalStore.RdbPredicates, callback: Function = () => {
+  deleteData(predicatesDel: relationalStore.RdbPredicates, callback: (rows: number | undefined) => void = () => {
   }) {
-    let flag = false;
     if (this.store != undefined) {
-      (this.store as relationalStore.RdbStore).delete(predicatesDel, (err, rows: number) => {
+      this.store.delete(predicatesDel, (err, rows: number) => {
         if (err) {
-          callback(flag);
+          callback(undefined);
         } else {
           callback(rows);
         }
       })
     } else {
-      callback();
+      callback(undefined);
     }
   }
 
   updateData(data: relationalStore.ValuesBucket, predicatesUpdate: relationalStore.RdbPredicates,
-    callback: Function = () => {
+    callback: (rows: number | undefined) => void = () => {
     }) {
     if (this.store != undefined) {
       this.store.update(data, predicatesUpdate, (err: Error, rows: number) => {
         if (err) {
-          callback();
+          callback(undefined);
         } else {
           callback(rows);
         }
       })
     } else {
-      callback();
+      callback(undefined);
     }
   }
 
-  queryData(predicateQuery: relationalStore.RdbPredicates, callback: Function = () => {
+  async renameData(oldId: string, data: relationalStore.ValuesBucket, replaceExisting: boolean): Promise<boolean> {
+    if (this.store === undefined) {
+      return false;
+    }
+    const store: relationalStore.RdbStore = this.store;
+    let transactionStarted: boolean = false;
+    try {
+      if (replaceExisting) {
+        store.beginTransaction();
+        transactionStarted = true;
+        const duplicate = new relationalStore.RdbPredicates(this.tableName);
+        duplicate.equalTo('ID', data.ID as string);
+        if (await store.delete(duplicate) !== 1) {
+          throw new Error('The item to replace was not found');
+        }
+      }
+      const original = new relationalStore.RdbPredicates(this.tableName);
+      original.equalTo('ID', oldId);
+      if (await store.update(data, original) !== 1) {
+        throw new Error('The item to rename was not found');
+      }
+      if (transactionStarted) {
+        store.commit();
+      }
+      return true;
+    } catch (error) {
+      if (transactionStarted) {
+        try {
+          store.rollBack();
+        } catch (rollbackError) {
+          // The operation still reports failure if rollback itself fails.
+        }
+      }
+      return false;
+    }
+  }
+
+  queryData(predicateQuery: relationalStore.RdbPredicates,
+    callback: (resultSet: relationalStore.ResultSet | undefined) => void = () => {
   }) {
     if (this.store) {
       this.store.query(predicateQuery, this.columns, (err: Error, resultSet) => {
         if (err) {
-          callback();
+          callback(undefined);
         } else {
           callback(resultSet);
         }
       })
     } else {
-      callback();
+      callback(undefined);
     }
   }
 }
