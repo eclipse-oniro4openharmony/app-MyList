@@ -1,3 +1,4 @@
+import { common } from '@kit.AbilityKit';
 import { relationalStore } from '@kit.ArkData';
 import Constants from '../pages/Constants'
 import RDBUtil from './RDBUtil'
@@ -6,57 +7,81 @@ import ShoppingItem from './ShoppingItem';
 export default class ShoppingListItemTable {
   private table = new RDBUtil(Constants.SHOPPING_LIST_TABLE_NAME, Constants.CREATE_SHOPPING_LIST_TABLE_SQL, ['ID', 'NAME', 'QUANTITY', 'CATEGORY', 'DONE']);
 
-  constructor(callback: Function = () => {
+  getRdbStore(context: common.Context, callback: (ready: boolean) => void = () => {
   }) {
-    this.table.getRdbStore(callback);
+    this.table.getRdbStore(context, callback);
   }
 
-  getRdbStore(callback: Function = () => {
-  }) {
-    this.table.getRdbStore(callback);
-  }
-
-  insertItem(item: ShoppingItem, callback: Function) {
-    let value: relationalStore.ValuesBucket = generateBuket(item);
+  insertItem(item: ShoppingItem, callback: (rowId: number | undefined) => void) {
+    const value: relationalStore.ValuesBucket = generateBuket(item);
     this.table.insertData(value, callback);
   }
 
-  deleteItem(item: ShoppingItem, callback: Function) {
-    let predicatesDel = new relationalStore.RdbPredicates(Constants.SHOPPING_LIST_TABLE_NAME);
-    predicatesDel.equalTo('ID', item.category + item.name);
-    this.table.deleteData(predicatesDel, callback);
+  deleteItem(item: ShoppingItem, callback: (rows: number | undefined) => void) {
+    try {
+      const predicatesDel = new relationalStore.RdbPredicates(Constants.SHOPPING_LIST_TABLE_NAME);
+      predicatesDel.equalTo('ID', item.category + item.name);
+      this.table.deleteData(predicatesDel, callback);
+    } catch (error) {
+      callback(undefined);
+    }
   }
 
-  deleteAll(callback: Function) {
-    let predicatesDelAll = new relationalStore.RdbPredicates(Constants.SHOPPING_LIST_TABLE_NAME);
+  deleteAll(callback: (rows: number | undefined) => void) {
+    const predicatesDelAll = new relationalStore.RdbPredicates(Constants.SHOPPING_LIST_TABLE_NAME);
     this.table.deleteData(predicatesDelAll, callback);
   }
 
-  updateItem(item: ShoppingItem, callback: Function) {
-    let value: relationalStore.ValuesBucket = generateBuket(item);
-    let predicatesUpdate = new relationalStore.RdbPredicates(Constants.SHOPPING_LIST_TABLE_NAME);
-    predicatesUpdate.equalTo('ID', item.category + item.name);
-    this.table.updateData(value, predicatesUpdate, callback);
+  updateItem(item: ShoppingItem, callback: (rows: number | undefined) => void) {
+    try {
+      const value: relationalStore.ValuesBucket = generateBuket(item);
+      const predicatesUpdate = new relationalStore.RdbPredicates(Constants.SHOPPING_LIST_TABLE_NAME);
+      predicatesUpdate.equalTo('ID', item.category + item.name);
+      this.table.updateData(value, predicatesUpdate, callback);
+    } catch (error) {
+      callback(undefined);
+    }
   }
 
-  queryItemsByCategory(category: string, callback: Function) {
-    let predicatesUpdate = new relationalStore.RdbPredicates(Constants.SHOPPING_LIST_TABLE_NAME);
-    predicatesUpdate.equalTo('CATEGORY', category);
+  renameItem(oldItem: ShoppingItem, newItem: ShoppingItem, replaceExisting: boolean,
+    callback: (success: boolean) => void) {
+    const data: relationalStore.ValuesBucket = generateBuket(newItem);
+    this.table.renameData(oldItem.category + oldItem.name, data, replaceExisting).then(callback);
+  }
 
-    this.table.queryData(predicatesUpdate, (resultSet: relationalStore.ResultSet) => {
-      let itemList: ShoppingItem[] = [];
-      if ((resultSet != undefined) && (resultSet.rowCount > 0)) {
-        while (resultSet.goToNextRow()) {
-          let name: string = resultSet.getString(resultSet.getColumnIndex('NAME'));
-          let quantity: number = resultSet.getLong(resultSet.getColumnIndex('QUANTITY'));
-          let done: number = resultSet.getLong(resultSet.getColumnIndex('DONE'));
-          let category: string = resultSet.getString(resultSet.getColumnIndex('CATEGORY'));
-          itemList.push(new ShoppingItem(name, quantity, Boolean(done), category));
+  queryItemsByCategory(category: string, callback: (items: ShoppingItem[] | undefined) => void) {
+    try {
+      const predicatesQuery = new relationalStore.RdbPredicates(Constants.SHOPPING_LIST_TABLE_NAME);
+      predicatesQuery.equalTo('CATEGORY', category);
+      this.table.queryData(predicatesQuery, (resultSet: relationalStore.ResultSet | undefined) => {
+        if (resultSet === undefined) {
+          callback(undefined);
+          return;
         }
-        resultSet.close();
-      }
-      callback(itemList)
-    });
+        const itemList: ShoppingItem[] = [];
+        let readSucceeded: boolean = false;
+        try {
+          while (resultSet.goToNextRow()) {
+            const name: string = resultSet.getString(resultSet.getColumnIndex('NAME'));
+            const quantity: number = resultSet.getLong(resultSet.getColumnIndex('QUANTITY'));
+            const done: number = resultSet.getLong(resultSet.getColumnIndex('DONE'));
+            const itemCategory: string = resultSet.getString(resultSet.getColumnIndex('CATEGORY'));
+            itemList.push(new ShoppingItem(name, quantity, Boolean(done), itemCategory));
+          }
+          readSucceeded = true;
+        } catch (error) {
+        } finally {
+          try {
+            resultSet.close();
+          } catch (error) {
+            readSucceeded = false;
+          }
+        }
+        callback(readSucceeded ? itemList : undefined);
+      });
+    } catch (error) {
+      callback(undefined);
+    }
   }
 }
 

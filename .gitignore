@@ -1,6 +1,9 @@
 /node_modules
 /oh_modules
 /local.properties
+/build-profile.json5
+/signatures/
+/.local-signing/
 /.idea
 **/build
 /.hvigor
